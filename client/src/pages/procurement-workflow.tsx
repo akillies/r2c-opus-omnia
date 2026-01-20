@@ -35,9 +35,10 @@ export default function ProcurementWorkflow() {
   });
 
   const createOrderMutation = useMutation({
-    mutationFn: async (fileName: string) => {
+    mutationFn: async ({ fileName, matchedItems }: { fileName: string; matchedItems?: any[] }) => {
       const response = await apiRequest("POST", "/api/orders", {
         fileName,
+        matchedItems,
         status: "processing"
       });
       return await response.json();
@@ -83,8 +84,8 @@ export default function ProcurementWorkflow() {
     }
   });
 
-  const handleFileUpload = (fileName: string) => {
-    createOrderMutation.mutate(fileName);
+  const handleFileUpload = (fileName: string, matchedItems?: any[]) => {
+    createOrderMutation.mutate({ fileName, matchedItems });
   };
 
   const handleAcceptSwap = (swapId: string) => {
