@@ -59,25 +59,26 @@ export default function ComparisonDrawer({ isOpen, onClose, swap, onAcceptSwap }
       />
 
       <div className={`drawer ${isOpen ? 'active' : ''}`} data-testid="comparison-drawer">
-        <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
-          <div>
-            <h3 className="text-xl font-bold text-slate-900">Browse Alternatives</h3>
-            <p className="text-sm text-slate-600 mt-1">
-              Compare products and select the best option
-            </p>
+        <div className="flex flex-col h-full">
+          <div className="flex-shrink-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900">Browse Alternatives</h3>
+              <p className="text-sm text-slate-600 mt-1">
+                Compare products and select the best option
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="w-8 h-8 p-0 hover:bg-slate-100 flex-shrink-0"
+              data-testid="button-close-drawer"
+            >
+              <X className="w-4 h-4" />
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="w-8 h-8 p-0 hover:bg-slate-100"
-            data-testid="button-close-drawer"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
 
-        <div className="p-6">
+          <div className="flex-1 overflow-y-auto p-6">
           {/* Current Selection */}
           <div className="mb-6">
             <div className="text-sm font-semibold text-slate-700 mb-2">Currently Selected</div>
@@ -186,6 +187,7 @@ export default function ComparisonDrawer({ isOpen, onClose, swap, onAcceptSwap }
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </>
