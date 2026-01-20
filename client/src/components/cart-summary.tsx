@@ -1,8 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, ShoppingCart, RotateCcw } from "lucide-react";
+import { ArrowLeft, Save, ShoppingCart, RotateCcw, Download, FileText, FileSpreadsheet } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Product } from "@shared/schema";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface CartSummaryProps {
   items: any[];
@@ -45,6 +48,120 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
 
   const { originalTotal, finalTotal, totalSavings } = calculateTotals();
 
+  const exportToCSV = () => {
+    const headers = ['Product Name', 'Quantity', 'Unit', 'Supplier', 'Contract', 'Unit Price', 'Line Total', 'Swapped'];
+    const rows = items.map(item => {
+      const product = getProduct(item.productId);
+      if (!product) return null;
+      
+      const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
+      const lineTotal = parseFloat(product.unitPrice) * item.quantity;
+      
+      return [
+        product.name,
+        item.quantity,
+        product.unitOfMeasure,
+        product.supplier,
+        product.contract,
+        `$${parseFloat(product.unitPrice).toFixed(2)}`,
+        `$${lineTotal.toFixed(2)}`,
+        swap ? 'Yes' : 'No'
+      ];
+    }).filter(Boolean);
+
+    rows.push(['', '', '', '', '', '', '', '']);
+    rows.push(['', '', '', '', '', 'Subtotal:', `$${finalTotal.toFixed(2)}`, '']);
+    if (totalSavings > 0) {
+      rows.push(['', '', '', '', '', 'Savings:', `$${totalSavings.toFixed(2)}`, '']);
+    }
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row!.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `purchase-order-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    doc.setFontSize(20);
+    doc.setTextColor(30, 58, 138);
+    doc.text('OPUS', 14, 20);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('by Omnia Partners', 14, 26);
+
+    doc.setFontSize(16);
+    doc.setTextColor(0);
+    doc.text('Purchase Order', 14, 40);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 48);
+    doc.text(`Items: ${items.length}`, 14, 54);
+
+    const tableData = items.map(item => {
+      const product = getProduct(item.productId);
+      if (!product) return null;
+      
+      const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
+      const lineTotal = parseFloat(product.unitPrice) * item.quantity;
+      
+      return [
+        product.name,
+        item.quantity.toString(),
+        product.unitOfMeasure,
+        product.supplier,
+        `$${parseFloat(product.unitPrice).toFixed(2)}`,
+        `$${lineTotal.toFixed(2)}`,
+        swap ? 'Yes' : 'No'
+      ];
+    }).filter(Boolean);
+
+    autoTable(doc, {
+      startY: 62,
+      head: [['Product', 'Qty', 'Unit', 'Supplier', 'Unit Price', 'Total', 'Swapped']],
+      body: tableData as string[][],
+      theme: 'striped',
+      headStyles: { 
+        fillColor: [30, 58, 138],
+        fontSize: 9 
+      },
+      bodyStyles: { fontSize: 9 },
+      columnStyles: {
+        0: { cellWidth: 50 },
+        4: { halign: 'right' },
+        5: { halign: 'right' }
+      }
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+
+    doc.setFontSize(10);
+    doc.setTextColor(0);
+    
+    if (totalSavings > 0) {
+      doc.text(`Original Total: $${originalTotal.toFixed(2)}`, pageWidth - 60, finalY);
+      doc.setTextColor(34, 139, 34);
+      doc.text(`Total Savings: $${totalSavings.toFixed(2)}`, pageWidth - 60, finalY + 6);
+      doc.setTextColor(0);
+    }
+
+    doc.setFontSize(12);
+    doc.setFont(undefined as any, 'bold');
+    doc.text(`Final Total: $${finalTotal.toFixed(2)}`, pageWidth - 60, finalY + 14);
+
+    doc.save(`purchase-order-${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -72,12 +189,31 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
         </div>
       </div>
 
-      {/* Cart Summary */}
       <div className="border border-slate-200 rounded-lg overflow-hidden">
         <div className="bg-slate-50 px-6 py-3 border-b border-slate-200">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-slate-900">Order Summary</h3>
-            <span className="text-sm text-slate-600">{items.length} Items</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-slate-600">{items.length} Items</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" data-testid="button-export">
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={exportToPDF} data-testid="button-export-pdf">
+                    <FileText className="w-4 h-4 mr-2" />
+                    Export as PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportToCSV} data-testid="button-export-csv">
+                    <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    Export as CSV
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
         
@@ -121,7 +257,6 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
           })}
         </div>
 
-        {/* Total */}
         <div className="bg-slate-50 px-6 py-4 border-t-2 border-slate-200">
           <div className="flex items-center justify-between">
             <div>
@@ -139,7 +274,6 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
         </div>
       </div>
 
-      {/* Action Buttons */}
       <div className="flex justify-between items-center pt-4">
         <Button
           onClick={onBack}
