@@ -47,10 +47,16 @@ Preferred communication style: Simple, everyday language.
 - Swap recommendation system integrated into order creation
 
 **Data Layer**
-- In-memory storage implementation (MemStorage class) for development/demo
-- Interface-based storage abstraction (IStorage) allows swapping to persistent storage
-- Drizzle ORM configured for PostgreSQL with schema definitions ready for production
+- PostgreSQL database storage (DatabaseStorage class) for persistent data
+- Interface-based storage abstraction (IStorage) allows different storage backends
+- Drizzle ORM for type-safe PostgreSQL queries and migrations
 - Schema uses UUIDs for primary keys and JSONB for flexible data structures
+
+**File Upload & Parsing**
+- CSV file parsing with intelligent column detection
+- Excel file parsing via xlsx library (base64 encoding for binary transfer)
+- Product matching algorithm that maps uploaded items to catalog products
+- Confidence scoring for match quality
 
 **Database Schema Design**
 - Products table: catalog items with pricing, supplier, contract, and eco-friendly flags
@@ -89,3 +95,13 @@ Preferred communication style: Simple, everyday language.
 - class-variance-authority (cva) for variant-based component styling
 - clsx and tailwind-merge for conditional className composition
 - nanoid for unique ID generation
+- xlsx for Excel file parsing
+- jspdf and jspdf-autotable for PDF generation
+
+# Recent Changes
+
+**January 2026 - Phase 2 Enhancements**
+- Migrated from in-memory storage to PostgreSQL database for persistent data
+- Added CSV/Excel file upload parsing with intelligent column detection and product matching
+- Implemented product filtering (search, supplier, availability) and sorting (name, price, quantity, confidence)
+- Added order export functionality with PDF and CSV download options
