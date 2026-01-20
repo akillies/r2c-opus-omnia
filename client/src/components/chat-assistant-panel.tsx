@@ -57,9 +57,6 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
       const productIds = data.items?.map((item: any) => item.productId) || [];
       onHighlightProducts(productIds);
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-      setTimeout(() => {
-        setCurrentStep(1);
-      }, 2500);
     },
     onError: () => {
       toast({

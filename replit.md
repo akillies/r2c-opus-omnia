@@ -100,6 +100,13 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+**January 2026 - OPUS Storefront Integration**
+- Redesigned layout to integrate with OPUS storefront: created OpusStorefront mock (left panel) and ChatAssistantPanel (right panel) that wraps the existing workflow
+- Updated branding to match official OPUS visual identity: navy blue colors (#1e3a5f, #2d5a87), OPUS logo styling, modern e-commerce design
+- Implemented interactive product highlighting: storefront products highlight when matched/selected in the assistant panel
+- Added collapsible chat panel with minimize/maximize controls and step indicators (Upload → Match → Optimize → Finalize)
+- Updated routing: "/" serves integrated view, "/standalone" maintains original workflow page
+
 **January 2026 - Phase 2 Enhancements**
 - Migrated from in-memory storage to PostgreSQL database for persistent data
 - Added CSV/Excel file upload parsing with intelligent column detection and product matching
