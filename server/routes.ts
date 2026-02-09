@@ -112,45 +112,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   function generateSwapRecommendations(orderId: string, orderItems: any[], products: any[]): any[] {
     const recommendations: any[] = [];
+    const usedAlternatives = new Set<string>();
     
     for (const item of orderItems) {
-      const currentProduct = products.find(p => p.id === item.productId);
+      const currentProduct = products.find((p: any) => p.id === item.productId);
       if (!currentProduct) continue;
 
-      const alternatives = products.filter(p => 
-        p.id !== item.productId && 
-        p.name.toLowerCase().includes(currentProduct.name.split(' ')[0].toLowerCase())
-      );
+      const currentPrice = parseFloat(currentProduct.unitPrice);
+      const currentName = currentProduct.name.toLowerCase();
+      const keywords = currentName.split(/[\s\-()]+/).filter((w: string) => w.length > 3);
 
-      for (const alt of alternatives.slice(0, 1)) {
-        const currentPrice = parseFloat(currentProduct.unitPrice);
-        const altPrice = parseFloat(alt.unitPrice);
-        const savings = (currentPrice - altPrice) * item.quantity;
-        
-        let swapType = 'supplier';
-        let reason = 'Alternative option available';
+      const alternatives = products
+        .filter((p: any) => {
+          if (p.id === item.productId || usedAlternatives.has(p.id)) return false;
+          const altName = p.name.toLowerCase();
+          return keywords.some((kw: string) => altName.includes(kw)) || p.category === currentProduct.category;
+        })
+        .map((alt: any) => {
+          const altPrice = parseFloat(alt.unitPrice);
+          const savings = (currentPrice - altPrice) * item.quantity;
+          let priority = 0;
+          let swapType = 'supplier';
+          let reason = '';
 
-        if (alt.unitOfMeasure !== currentProduct.unitOfMeasure) {
-          swapType = 'pack_size';
-          reason = `Pack size optimization - ${alt.unitOfMeasure} format available`;
-        } else if (currentProduct.availability === 'Low Stock' && alt.availability === 'In Stock') {
-          swapType = 'stock';
-          reason = 'Stock availability - Better availability with this option';
-        } else if (alt.isEco && !currentProduct.isEco) {
-          swapType = 'sustainability';
-          reason = 'Sustainability match - Eco-friendly alternative';
-        } else if (alt.supplier !== currentProduct.supplier) {
-          swapType = 'supplier';
-          reason = `Alternative supplier - ${alt.supplier}`;
-        }
+          if (currentProduct.availability === 'Low Stock' && alt.availability === 'In Stock' && altPrice <= currentPrice * 1.05) {
+            swapType = 'stock';
+            reason = `Stock risk avoided — ${currentProduct.name} is low stock, this equivalent ships immediately`;
+            priority = 100;
+          } else if (alt.unitOfMeasure !== currentProduct.unitOfMeasure && altPrice < currentPrice && savings > 0) {
+            swapType = 'pack_size';
+            const perUnitSavings = ((currentPrice - altPrice) / currentPrice * 100).toFixed(0);
+            reason = `Bulk savings — ${alt.unitOfMeasure} format is ${perUnitSavings}% cheaper per unit than ${currentProduct.unitOfMeasure}`;
+            priority = 80;
+          } else if (alt.isEco && !currentProduct.isEco && altPrice <= currentPrice * 1.1) {
+            swapType = 'sustainability';
+            if (altPrice <= currentPrice) {
+              reason = `Eco-friendly alternative at same or lower price — meets Green Purchasing Policy`;
+            } else {
+              reason = `Eco-certified option at only $${(altPrice - currentPrice).toFixed(2)}/unit more — aligns with sustainability mandate`;
+            }
+            priority = 60;
+          } else if (savings > 0 && alt.supplier !== currentProduct.supplier) {
+            swapType = 'supplier';
+            reason = `Better price from ${alt.supplier} — saves $${savings.toFixed(2)} on this line (${((savings / (currentPrice * item.quantity)) * 100).toFixed(0)}% reduction)`;
+            priority = 70;
+          } else if (alt.supplier !== currentProduct.supplier && altPrice < currentPrice) {
+            swapType = 'supplier';
+            reason = `Competitive alternative from ${alt.supplier} — lower cost with same quality`;
+            priority = 40;
+          }
 
+          const effectiveSavings = Math.max(0, savings);
+          return { alt, savings: effectiveSavings, swapType, reason, priority };
+        })
+        .filter((r: any) => r.reason.length > 0)
+        .sort((a: any, b: any) => b.priority - a.priority);
+
+      const bestSwap = alternatives[0];
+      if (bestSwap) {
+        usedAlternatives.add(bestSwap.alt.id);
         recommendations.push({
           orderId,
           originalProductId: item.productId,
-          recommendedProductId: alt.id,
-          swapType,
-          savingsAmount: savings.toFixed(2),
-          reason
+          recommendedProductId: bestSwap.alt.id,
+          swapType: bestSwap.swapType,
+          savingsAmount: bestSwap.savings.toFixed(2),
+          reason: bestSwap.reason
         });
       }
     }

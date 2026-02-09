@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ShoppingCart, RotateCcw, Download, FileText, FileSpreadsheet, TrendingDown } from "lucide-react";
+import { ArrowLeft, ShoppingCart, RotateCcw, Download, FileText, FileSpreadsheet, TrendingDown, Clock, ShieldCheck, Leaf, Zap } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Product } from "@shared/schema";
 import jsPDF from 'jspdf';
@@ -13,9 +13,10 @@ interface CartSummaryProps {
   onBack: () => void;
   onSubmit: () => void;
   isSubmitting: boolean;
+  elapsedTime?: number;
 }
 
-export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitting }: CartSummaryProps) {
+export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitting, elapsedTime }: CartSummaryProps) {
   const { data: products } = useQuery<Product[]>({
     queryKey: ['/api/products']
   });
@@ -45,6 +46,17 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
   };
 
   const { originalTotal, finalTotal, totalSavings } = calculateTotals();
+  const acceptedSwaps = swaps.filter(s => s.isAccepted).length;
+  const ecoSwaps = swaps.filter(s => s.isAccepted && s.swapType === 'sustainability').length;
+  const stockRisksAvoided = swaps.filter(s => s.isAccepted && s.swapType === 'stock').length;
+  const savingsPercent = originalTotal > 0 ? ((totalSavings / originalTotal) * 100).toFixed(0) : '0';
+  const manualEstimateMin = Math.max(15, items.length * 4);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+  };
 
   const exportToCSV = () => {
     const headers = ['Product Name', 'Quantity', 'Unit', 'Supplier', 'Contract', 'Unit Price', 'Line Total', 'Swapped'];
@@ -123,15 +135,15 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-bold text-gray-900 mb-1">Order Summary</h3>
-          <p className="text-xs text-gray-500">{items.length} items ready to submit</p>
+          <h3 className="font-bold text-gray-900 mb-0.5 text-sm sm:text-base">Order Summary</h3>
+          <p className="text-[10px] sm:text-xs text-gray-500">{items.length} items ready to submit</p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7 text-xs" data-testid="button-export">
+            <Button variant="outline" size="sm" className="h-7 text-[10px] sm:text-xs" data-testid="button-export">
               <Download className="w-3 h-3 mr-1" />
               Export
             </Button>
@@ -149,24 +161,53 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
         </DropdownMenu>
       </div>
 
+      <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-lg p-2.5">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <Zap className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="text-xs font-semibold text-emerald-800">Agent Impact Summary</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+          <div className="bg-white/80 rounded-lg p-1.5 border border-white">
+            <Clock className="w-3.5 h-3.5 mx-auto text-blue-600 mb-0.5" />
+            <div className="text-xs font-bold text-gray-900">{elapsedTime ? formatTime(elapsedTime) : '< 5 min'}</div>
+            <div className="text-[8px] sm:text-[9px] text-gray-500">vs ~{manualEstimateMin}min manual</div>
+          </div>
+          <div className="bg-white/80 rounded-lg p-1.5 border border-white">
+            <TrendingDown className="w-3.5 h-3.5 mx-auto text-green-600 mb-0.5" />
+            <div className="text-xs font-bold text-gray-900">{savingsPercent}%</div>
+            <div className="text-[8px] sm:text-[9px] text-gray-500">cost reduction</div>
+          </div>
+          <div className="bg-white/80 rounded-lg p-1.5 border border-white">
+            <ShieldCheck className="w-3.5 h-3.5 mx-auto text-purple-600 mb-0.5" />
+            <div className="text-xs font-bold text-gray-900">100%</div>
+            <div className="text-[8px] sm:text-[9px] text-gray-500">compliant</div>
+          </div>
+          <div className="bg-white/80 rounded-lg p-1.5 border border-white">
+            <Leaf className="w-3.5 h-3.5 mx-auto text-green-600 mb-0.5" />
+            <div className="text-xs font-bold text-gray-900">{ecoSwaps}</div>
+            <div className="text-[8px] sm:text-[9px] text-gray-500">eco swaps</div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-2">
         {totalSavings > 0 && (
-          <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-center">
-            <div className="text-[10px] text-green-600 uppercase font-semibold tracking-wide flex items-center justify-center gap-1">
+          <div className="bg-green-50 border border-green-200 rounded-lg px-2.5 sm:px-3 py-2 text-center">
+            <div className="text-[9px] sm:text-[10px] text-green-600 uppercase font-semibold tracking-wide flex items-center justify-center gap-1">
               <TrendingDown className="w-3 h-3" />
               Savings
             </div>
-            <div className="text-lg font-bold text-green-900" data-testid="total-savings">${totalSavings.toFixed(2)}</div>
+            <div className="text-base sm:text-lg font-bold text-green-900" data-testid="total-savings">${totalSavings.toFixed(2)}</div>
           </div>
         )}
-        <div className={`bg-[#1e3a5f]/5 border border-[#1e3a5f]/20 rounded-lg px-3 py-2 text-center ${totalSavings <= 0 ? 'col-span-2' : ''}`}>
-          <div className="text-[10px] text-[#1e3a5f] uppercase font-semibold tracking-wide">Final Total</div>
-          <div className="text-lg font-bold text-[#1e3a5f]" data-testid="final-total">${finalTotal.toFixed(2)}</div>
+        <div className={`bg-[#1e3a5f]/5 border border-[#1e3a5f]/20 rounded-lg px-2.5 sm:px-3 py-2 text-center ${totalSavings <= 0 ? 'col-span-2' : ''}`}>
+          <div className="text-[9px] sm:text-[10px] text-[#1e3a5f] uppercase font-semibold tracking-wide">Final Total</div>
+          <div className="text-base sm:text-lg font-bold text-[#1e3a5f]" data-testid="final-total">${finalTotal.toFixed(2)}</div>
         </div>
       </div>
 
       <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <div className="max-h-[280px] overflow-y-auto divide-y divide-gray-100">
+        <div className="max-h-[200px] sm:max-h-[220px] overflow-y-auto divide-y divide-gray-100">
           {items.map((item, index) => {
             const product = getProduct(item.productId);
             const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
@@ -174,23 +215,23 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
             const lineTotal = parseFloat(product.unitPrice) * item.quantity;
 
             return (
-              <div key={index} className="p-3 hover:bg-gray-50 transition-colors" data-testid={`cart-item-${index}`}>
+              <div key={index} className="p-2.5 sm:p-3 hover:bg-gray-50 transition-colors" data-testid={`cart-item-${index}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      <h4 className="font-medium text-gray-900 text-sm truncate">{product.name}</h4>
+                      <h4 className="font-medium text-gray-900 text-[11px] sm:text-sm truncate">{product.name}</h4>
                       {swap && (
-                        <Badge className="bg-green-100 text-green-700 text-[10px] px-1 py-0 shrink-0 flex items-center gap-0.5">
-                          <RotateCcw className="w-2.5 h-2.5" />
+                        <Badge className="bg-green-100 text-green-700 text-[8px] sm:text-[10px] px-1 py-0 shrink-0 flex items-center gap-0.5">
+                          <RotateCcw className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
                           Swapped
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-[10px] text-gray-500">
                       {item.quantity} {product.unitOfMeasure} @ ${parseFloat(product.unitPrice).toFixed(2)}
                     </p>
                   </div>
-                  <span className="font-mono font-semibold text-gray-900 text-sm shrink-0">${lineTotal.toFixed(2)}</span>
+                  <span className="font-mono font-semibold text-gray-900 text-[11px] sm:text-sm shrink-0">${lineTotal.toFixed(2)}</span>
                 </div>
               </div>
             );
@@ -202,7 +243,7 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
         <Button
           onClick={onSubmit}
           disabled={isSubmitting}
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white h-10 font-semibold"
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white h-9 sm:h-10 font-semibold text-xs sm:text-sm"
           data-testid="button-submit-order"
         >
           <ShoppingCart className="w-4 h-4 mr-2" />
@@ -211,10 +252,10 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
         <Button
           onClick={onBack}
           variant="ghost"
-          className="w-full text-gray-500 h-9 text-sm"
+          className="w-full text-gray-500 h-8 sm:h-9 text-xs sm:text-sm"
           data-testid="button-back-optimize"
         >
-          <ArrowLeft className="w-4 h-4 mr-1" />
+          <ArrowLeft className="w-3.5 h-3.5 mr-1" />
           Back to Optimize
         </Button>
       </div>

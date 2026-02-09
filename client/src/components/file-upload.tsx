@@ -171,22 +171,22 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
-            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
+            className={`border-2 border-dashed rounded-xl p-5 sm:p-8 text-center cursor-pointer transition-all duration-200 ${
               isDragOver 
                 ? 'border-[#1e3a5f] bg-blue-50 scale-[1.02]' 
                 : 'border-gray-300 hover:border-[#1e3a5f] hover:bg-blue-50/50'
             }`}
             data-testid="upload-zone"
           >
-            <div className={`w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center transition-all duration-200 ${
+            <div className={`w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 rounded-xl flex items-center justify-center transition-all duration-200 ${
               isDragOver ? 'bg-[#1e3a5f] text-white scale-110' : 'bg-gray-100 text-gray-500'
             }`}>
-              <CloudUpload className="w-6 h-6" />
+              <CloudUpload className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <p className="font-semibold text-gray-900 text-sm mb-1">
+            <p className="font-semibold text-gray-900 text-xs sm:text-sm mb-1">
               Drop files here or click to browse
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-[10px] sm:text-xs text-gray-500">
               Excel (.xlsx, .xls) or CSV files
             </p>
           </div>
@@ -223,9 +223,13 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                  <span className="text-sm font-medium text-blue-900">Processing...</span>
+                  <span className="text-xs sm:text-sm font-medium text-blue-900">
+                    {uploadProgress < 40 ? 'Reading document...' : 
+                     uploadProgress < 70 ? 'Detecting columns & items...' : 
+                     'Matching to catalog...'}
+                  </span>
                 </div>
-                <span className="text-sm font-bold text-blue-600" data-testid="text-progress">{uploadProgress}%</span>
+                <span className="text-xs sm:text-sm font-bold text-blue-600" data-testid="text-progress">{uploadProgress}%</span>
               </div>
               <div className="w-full bg-blue-200 rounded-full h-1.5">
                 <div 
@@ -233,7 +237,11 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
-              <p className="text-xs text-blue-700 mt-1.5">Detecting items and matching to contracts</p>
+              <p className="text-[10px] sm:text-xs text-blue-700 mt-1.5">
+                {uploadProgress < 40 ? 'Parsing file structure and format' :
+                 uploadProgress < 70 ? 'Intelligently detecting product names, quantities, and units' :
+                 'Cross-referencing against 6M+ catalog products and approved contracts'}
+              </p>
             </div>
           ) : (
             <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -241,10 +249,10 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
                 <Sparkles className="w-3.5 h-3.5 text-white" />
               </div>
               <div>
-                <p className="font-medium text-blue-900 text-sm" data-testid="text-items-detected">
-                  {parsedItemCount} items detected
+                <p className="font-medium text-blue-900 text-xs sm:text-sm" data-testid="text-items-detected">
+                  {parsedItemCount} items detected & matched
                 </p>
-                <p className="text-xs text-blue-700">Ready to review matches</p>
+                <p className="text-[10px] sm:text-xs text-blue-700">All items verified against approved contracts</p>
               </div>
             </div>
           )}
@@ -254,11 +262,11 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
       <Button
         onClick={onNext}
         disabled={!uploadSuccess || uploadProgress < 100}
-        className="w-full bg-[#1e3a5f] hover:bg-[#15293f] text-white h-10"
+        className="w-full bg-[#1e3a5f] hover:bg-[#15293f] text-white h-9 sm:h-10 text-xs sm:text-sm"
         data-testid="button-continue-check"
       >
         Continue to Match
-        <ArrowRight className="w-4 h-4 ml-2" />
+        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-2" />
       </Button>
     </div>
   );

@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.cache
+.replit
+.config
+.local
+.upm
+.breakpoints
+attached_assets
+*.md
+!README.md
+.env
