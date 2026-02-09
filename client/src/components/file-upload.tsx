@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { CloudUpload, Check, Loader2, ArrowRight, FileSpreadsheet, AlertCircle } from "lucide-react";
+import { CloudUpload, Check, Loader2, ArrowRight, FileSpreadsheet, AlertCircle, Sparkles } from "lucide-react";
 
 interface MatchedItem {
   requestedItem: {
@@ -125,11 +125,8 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    
     const file = e.dataTransfer.files[0];
-    if (file) {
-      handleFileSelect(file);
-    }
+    if (file) handleFileSelect(file);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -137,44 +134,29 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
     setIsDragOver(true);
   };
 
-  const handleDragLeave = () => {
-    setIsDragOver(false);
-  };
+  const handleDragLeave = () => setIsDragOver(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      handleFileSelect(file);
-    }
+    if (file) handleFileSelect(file);
   };
 
-  const handleClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleClick = () => fileInputRef.current?.click();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold mb-2 text-slate-900">
-          Upload Your Requirements
-        </h2>
-        <p className="text-slate-600">
-          Drop your RFQ, PO, or paste a list. We'll auto-detect items, quantities, and constraints.
-        </p>
-      </div>
-
+    <div className="space-y-4">
       {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <AlertCircle className="w-6 h-6 text-red-600" />
+        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm">
+          <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
           <div>
-            <p className="font-semibold text-red-900">Upload failed</p>
-            <p className="text-sm text-red-700">{error}</p>
+            <p className="font-medium text-red-900">Upload failed</p>
+            <p className="text-red-700 text-xs">{error}</p>
           </div>
         </div>
       )}
 
       {!uploadSuccess ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <input
             ref={fileInputRef}
             type="file"
@@ -189,90 +171,95 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
-            className={`upload-zone border-2 border-dashed rounded-lg p-16 text-center cursor-pointer w-full transition-all ${
+            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
               isDragOver 
-                ? 'border-primary bg-primary/10' 
-                : 'border-blue-300 hover:border-primary hover:bg-primary/5'
+                ? 'border-[#1e3a5f] bg-blue-50 scale-[1.02]' 
+                : 'border-gray-300 hover:border-[#1e3a5f] hover:bg-blue-50/50'
             }`}
             data-testid="upload-zone"
           >
-            <CloudUpload className={`upload-icon w-16 h-16 mx-auto mb-4 transition-transform ${
-              isDragOver ? 'text-primary scale-110' : 'text-blue-600'
-            }`} />
-            <p className="text-lg font-semibold text-slate-900 mb-2">
+            <div className={`w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center transition-all duration-200 ${
+              isDragOver ? 'bg-[#1e3a5f] text-white scale-110' : 'bg-gray-100 text-gray-500'
+            }`}>
+              <CloudUpload className="w-6 h-6" />
+            </div>
+            <p className="font-semibold text-gray-900 text-sm mb-1">
               Drop files here or click to browse
             </p>
-            <p className="text-sm text-slate-500">
-              Supports: Excel (.xlsx, .xls), CSV files
+            <p className="text-xs text-gray-500">
+              Excel (.xlsx, .xls) or CSV files
             </p>
           </div>
 
-          <div className="text-center">
-            <span className="text-sm text-slate-500">or</span>
+          <div className="relative flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200"></div></div>
+            <span className="relative bg-white px-3 text-xs text-gray-400">or try a sample</span>
           </div>
 
           <Button
             onClick={handleDemoUpload}
             variant="outline"
-            className="w-full"
+            className="w-full h-10 text-sm border-dashed hover:bg-blue-50 hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-all"
             data-testid="button-demo-upload"
           >
             <FileSpreadsheet className="w-4 h-4 mr-2" />
-            Use Demo File (school-supplies-rfq-2024.xlsx)
+            Use Demo File (school-supplies-rfq.xlsx)
           </Button>
         </div>
       ) : (
-        <div className="space-y-4 fade-in">
-          <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <Check className="w-6 h-6 text-green-600" />
-            <div>
-              <p className="font-semibold text-green-900" data-testid="text-upload-success">File uploaded successfully</p>
-              <p className="text-sm text-green-700" data-testid="text-file-name">{uploadedFileName}</p>
+        <div className="space-y-3 animate-in fade-in duration-300">
+          <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+              <Check className="w-3.5 h-3.5 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-medium text-green-900 text-sm" data-testid="text-upload-success">File uploaded</p>
+              <p className="text-xs text-green-700 truncate" data-testid="text-file-name">{uploadedFileName}</p>
             </div>
           </div>
 
           {uploadProgress < 100 ? (
-            <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="pulse">
-                  <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                  <span className="text-sm font-medium text-blue-900">Processing...</span>
                 </div>
-                <div>
-                  <p className="font-semibold text-blue-900">Processing your requirements...</p>
-                  <p className="text-sm text-blue-700">
-                    Detecting items, quantities, and matching to contracts
-                  </p>
-                </div>
+                <span className="text-sm font-bold text-blue-600" data-testid="text-progress">{uploadProgress}%</span>
               </div>
-              <div className="text-2xl font-bold text-blue-600" data-testid="text-progress">{uploadProgress}%</div>
+              <div className="w-full bg-blue-200 rounded-full h-1.5">
+                <div 
+                  className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <p className="text-xs text-blue-700 mt-1.5">Detecting items and matching to contracts</p>
             </div>
           ) : (
-            <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <Check className="w-6 h-6 text-blue-600" />
+            <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shrink-0">
+                <Sparkles className="w-3.5 h-3.5 text-white" />
+              </div>
               <div>
-                <p className="font-semibold text-blue-900" data-testid="text-items-detected">
-                  {parsedItemCount} items detected and matched
+                <p className="font-medium text-blue-900 text-sm" data-testid="text-items-detected">
+                  {parsedItemCount} items detected
                 </p>
-                <p className="text-sm text-blue-700">
-                  Ready to review product matches
-                </p>
+                <p className="text-xs text-blue-700">Ready to review matches</p>
               </div>
             </div>
           )}
         </div>
       )}
 
-      <div className="flex justify-end gap-3 pt-4">
-        <Button
-          onClick={onNext}
-          disabled={!uploadSuccess || uploadProgress < 100}
-          className="btn-primary flex items-center gap-2"
-          data-testid="button-continue-check"
-        >
-          Continue to Check
-          <ArrowRight className="w-4 h-4" />
-        </Button>
-      </div>
+      <Button
+        onClick={onNext}
+        disabled={!uploadSuccess || uploadProgress < 100}
+        className="w-full bg-[#1e3a5f] hover:bg-[#15293f] text-white h-10"
+        data-testid="button-continue-check"
+      >
+        Continue to Match
+        <ArrowRight className="w-4 h-4 ml-2" />
+      </Button>
     </div>
   );
 }

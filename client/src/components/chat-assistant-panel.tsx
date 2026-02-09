@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Minimize2, Maximize2, Bot, Sparkles } from "lucide-react";
+import { X, Minimize2, Maximize2, Bot, Sparkles, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -119,80 +119,92 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
     queryClient.clear();
   };
 
-  const steps = ['Upload', 'Match', 'Optimize', 'Finalize'];
+  const steps = [
+    { label: 'Upload', icon: '📄' },
+    { label: 'Match', icon: '🔍' },
+    { label: 'Optimize', icon: '⚡' },
+    { label: 'Finalize', icon: '✅' },
+  ];
 
   if (!isOpen) return null;
 
   return (
     <>
       <div 
-        className={`fixed right-0 top-0 h-full bg-white shadow-2xl border-l border-gray-200 flex flex-col z-50 transition-all duration-300 ${
-          isMinimized ? 'w-16' : 'w-[480px]'
+        className={`fixed right-0 top-0 h-full bg-white shadow-2xl border-l border-gray-200 flex flex-col z-50 transition-all duration-300 ease-in-out ${
+          isMinimized ? 'w-[56px]' : 'w-[420px]'
         }`}
         data-testid="chat-assistant-panel"
       >
-        <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a87] text-white px-4 py-3 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-              <Bot className="w-5 h-5" />
+        <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a87] text-white px-3 py-2.5 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+              {isMinimized ? <MessageSquare className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
             </div>
             {!isMinimized && (
               <div>
-                <div className="font-semibold text-sm">Requirements Assistant</div>
-                <div className="text-xs text-blue-200 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
+                <div className="font-semibold text-sm leading-tight">R2C Assistant</div>
+                <div className="text-[10px] text-blue-200 flex items-center gap-1">
+                  <Sparkles className="w-2.5 h-2.5" />
                   AI-Powered Matching
                 </div>
               </div>
             )}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <button
               onClick={() => setIsMinimized(!isMinimized)}
               className="p-1.5 hover:bg-white/20 rounded transition-colors"
               data-testid="button-minimize"
             >
-              {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+              {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
             </button>
-            <button
-              onClick={onClose}
-              className="p-1.5 hover:bg-white/20 rounded transition-colors"
-              data-testid="button-close-assistant"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {!isMinimized && (
+              <button
+                onClick={onClose}
+                className="p-1.5 hover:bg-white/20 rounded transition-colors"
+                data-testid="button-close-assistant"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
         {!isMinimized && (
           <>
-            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 shrink-0">
-              <div className="flex items-center justify-between">
+            <div className="bg-white px-3 py-2 border-b border-gray-100 shrink-0">
+              <div className="flex items-center gap-0.5">
                 {steps.map((step, index) => (
-                  <div key={step} className="flex items-center">
-                    <div className={`flex items-center gap-1 ${index <= currentStep ? 'text-[#1e3a5f]' : 'text-gray-400'}`}>
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
-                        index < currentStep ? 'bg-green-500 text-white' :
-                        index === currentStep ? 'bg-[#1e3a5f] text-white' : 'bg-gray-200 text-gray-500'
+                  <div key={step.label} className="flex items-center flex-1">
+                    <div className="flex flex-col items-center flex-1">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                        index < currentStep ? 'bg-green-500 text-white shadow-sm shadow-green-200' :
+                        index === currentStep ? 'bg-[#1e3a5f] text-white shadow-sm shadow-blue-200 scale-110' : 
+                        'bg-gray-100 text-gray-400'
                       }`}>
-                        {index < currentStep ? '✓' : index + 1}
+                        {index < currentStep ? '✓' : step.icon}
                       </div>
-                      <span className="text-xs font-medium hidden sm:inline">{step}</span>
+                      <span className={`text-[10px] mt-0.5 font-medium ${
+                        index <= currentStep ? 'text-[#1e3a5f]' : 'text-gray-400'
+                      }`}>{step.label}</span>
                     </div>
                     {index < steps.length - 1 && (
-                      <div className={`w-8 h-0.5 mx-1 ${index < currentStep ? 'bg-green-500' : 'bg-gray-200'}`} />
+                      <div className={`h-0.5 w-full mx-0.5 rounded-full transition-all duration-500 ${
+                        index < currentStep ? 'bg-green-400' : 'bg-gray-200'
+                      }`} />
                     )}
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto p-4">
+            <div className="flex-1 overflow-auto p-3">
               {currentStep === 0 && (
-                <div className="space-y-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="space-y-3">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
                     <p className="text-sm text-blue-800">
-                      <strong>Hi!</strong> I'll help you convert your requirements into an optimized purchase order. Upload your RFQ or use a demo file to get started.
+                      <strong>Welcome!</strong> Upload your RFQ and I'll match products, find savings, and optimize your order.
                     </p>
                   </div>
                   <FileUpload
@@ -234,6 +246,24 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
             </div>
           </>
         )}
+
+        {isMinimized && (
+          <div className="flex-1 flex flex-col items-center pt-3 gap-2">
+            {steps.map((step, index) => (
+              <div
+                key={step.label}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${
+                  index < currentStep ? 'bg-green-500 text-white' :
+                  index === currentStep ? 'bg-[#1e3a5f] text-white scale-110' :
+                  'bg-gray-100 text-gray-400'
+                }`}
+                title={step.label}
+              >
+                {index < currentStep ? '✓' : step.icon}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <ComparisonDrawer
@@ -264,10 +294,10 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
             </div>
             <div className="flex gap-3">
               <Button onClick={handleNewOrder} variant="outline" className="flex-1" data-testid="button-new-order">
-                Create New Order
+                New Order
               </Button>
               <Button onClick={() => setIsSuccessModalOpen(false)} className="flex-1 bg-[#1e3a5f] hover:bg-[#15293f]">
-                View in Cart
+                Done
               </Button>
             </div>
           </div>

@@ -8,8 +8,10 @@ export default function OpusIntegrated() {
   const [highlightedProducts, setHighlightedProducts] = useState<string[]>([]);
 
   return (
-    <div className="h-screen flex overflow-hidden">
-      <div className={`flex-1 transition-all duration-300 ${isAssistantOpen ? 'mr-[480px]' : ''}`}>
+    <div className="h-screen flex overflow-hidden bg-gray-50">
+      <div className={`flex-1 transition-all duration-300 ease-in-out ${
+        isAssistantOpen ? 'mr-[420px]' : ''
+      }`}>
         <OpusStorefront
           cartItemCount={cartItemCount}
           onOpenAssistant={() => setIsAssistantOpen(true)}

@@ -3,8 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Search, ArrowUpDown, Filter } from "lucide-react";
+import { CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Search, Package } from "lucide-react";
 import type { Product } from "@shared/schema";
 
 interface ProductMatchingProps {
@@ -13,314 +12,126 @@ interface ProductMatchingProps {
   onNext: () => void;
 }
 
-type SortField = 'name' | 'price' | 'confidence' | 'quantity';
-type SortOrder = 'asc' | 'desc';
-
 export default function ProductMatching({ items, onBack, onNext }: ProductMatchingProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [supplierFilter, setSupplierFilter] = useState<string>("all");
-  const [availabilityFilter, setAvailabilityFilter] = useState<string>("all");
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   const { data: products } = useQuery<Product[]>({
     queryKey: ['/api/products']
   });
 
-  const getProduct = (productId: string) => {
-    return products?.find(p => p.id === productId);
-  };
+  const getProduct = (productId: string) => products?.find(p => p.id === productId);
 
-  const suppliers = useMemo(() => {
-    const supplierSet = new Set<string>();
-    items.forEach(item => {
+  const filteredItems = useMemo(() => {
+    if (!searchQuery) return items;
+    const query = searchQuery.toLowerCase();
+    return items.filter(item => {
       const product = getProduct(item.productId);
-      if (product?.supplier) {
-        supplierSet.add(product.supplier);
-      }
+      return product?.name.toLowerCase().includes(query) || product?.supplier.toLowerCase().includes(query);
     });
-    return Array.from(supplierSet);
-  }, [items, products]);
+  }, [items, products, searchQuery]);
 
-  const filteredAndSortedItems = useMemo(() => {
-    let result = items.filter(item => {
-      const product = getProduct(item.productId);
-      if (!product) return false;
-
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        if (!product.name.toLowerCase().includes(query) &&
-            !product.supplier.toLowerCase().includes(query)) {
-          return false;
-        }
-      }
-
-      if (supplierFilter !== "all" && product.supplier !== supplierFilter) {
-        return false;
-      }
-
-      if (availabilityFilter !== "all" && product.availability !== availabilityFilter) {
-        return false;
-      }
-
-      return true;
-    });
-
-    result.sort((a, b) => {
-      const productA = getProduct(a.productId);
-      const productB = getProduct(b.productId);
-      if (!productA || !productB) return 0;
-
-      let comparison = 0;
-      switch (sortField) {
-        case 'name':
-          comparison = productA.name.localeCompare(productB.name);
-          break;
-        case 'price':
-          comparison = parseFloat(a.unitPrice) - parseFloat(b.unitPrice);
-          break;
-        case 'confidence':
-          comparison = parseFloat(a.confidence) - parseFloat(b.confidence);
-          break;
-        case 'quantity':
-          comparison = a.quantity - b.quantity;
-          break;
-      }
-
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
-
-    return result;
-  }, [items, products, searchQuery, supplierFilter, availabilityFilter, sortField, sortOrder]);
-
-  const getConfidenceIcon = (confidence: string) => {
-    const conf = parseFloat(confidence);
-    if (conf >= 0.95) {
-      return <CheckCircle className="w-4 h-4 text-green-600" />;
-    }
-    return <AlertCircle className="w-4 h-4 text-amber-600" />;
-  };
+  const avgConfidence = items.reduce((acc, item) => acc + parseFloat(item.confidence || "0"), 0) / items.length;
 
   const getConfidenceColor = (confidence: string) => {
     const conf = parseFloat(confidence);
-    if (conf >= 0.95) return "text-green-700";
-    return "text-amber-700";
-  };
-
-  const getAvailabilityBadge = (availability: string) => {
-    if (availability === "In Stock") {
-      return <Badge className="bg-green-100 text-green-700">In Stock</Badge>;
-    }
-    return <Badge className="bg-amber-100 text-amber-700">Low Stock</Badge>;
-  };
-
-  const avgConfidence = items.reduce((acc, item) => {
-    return acc + parseFloat(item.confidence || "0");
-  }, 0) / items.length;
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
-  };
-
-  const getSortIndicator = (field: SortField) => {
-    if (sortField !== field) return null;
-    return sortOrder === 'asc' ? '↑' : '↓';
+    if (conf >= 0.95) return "text-green-700 bg-green-50";
+    if (conf >= 0.8) return "text-amber-700 bg-amber-50";
+    return "text-red-700 bg-red-50";
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold mb-2 text-slate-900">
-            Review Detected Items
-          </h2>
-          <p className="text-slate-600">
-            We've matched {items.length} items from your RFQ to contracted products. Verify accuracy before proceeding.
-          </p>
-        </div>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
-          <div className="text-sm text-blue-700">Avg. Confidence</div>
-          <div className="text-2xl font-bold text-blue-900">
-            {(avgConfidence * 100).toFixed(1)}%
+    <div className="space-y-4">
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="font-bold text-gray-900">Matched Items</h3>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 rounded-md">
+            <span className="text-xs text-blue-700">Avg match:</span>
+            <span className="text-xs font-bold text-blue-900">{(avgConfidence * 100).toFixed(0)}%</span>
           </div>
         </div>
+        <p className="text-xs text-gray-500">{items.length} items matched from your RFQ</p>
       </div>
 
-      <div className="flex flex-wrap gap-4 items-center p-4 bg-slate-50 rounded-lg border border-slate-200">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-slate-500" />
-          <span className="text-sm font-medium text-slate-700">Filters:</span>
-        </div>
-
-        <div className="relative flex-1 min-w-[200px] max-w-[300px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            placeholder="Search products..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-            data-testid="input-search"
-          />
-        </div>
-
-        <Select value={supplierFilter} onValueChange={setSupplierFilter}>
-          <SelectTrigger className="w-[180px]" data-testid="select-supplier">
-            <SelectValue placeholder="All Suppliers" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Suppliers</SelectItem>
-            {suppliers.map(supplier => (
-              <SelectItem key={supplier} value={supplier}>{supplier}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={availabilityFilter} onValueChange={setAvailabilityFilter}>
-          <SelectTrigger className="w-[160px]" data-testid="select-availability">
-            <SelectValue placeholder="All Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="In Stock">In Stock</SelectItem>
-            <SelectItem value="Low Stock">Low Stock</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {(searchQuery || supplierFilter !== "all" || availabilityFilter !== "all") && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setSearchQuery("");
-              setSupplierFilter("all");
-              setAvailabilityFilter("all");
-            }}
-            className="text-slate-600"
-            data-testid="button-clear-filters"
-          >
-            Clear filters
-          </Button>
-        )}
-
-        <div className="ml-auto text-sm text-slate-500">
-          Showing {filteredAndSortedItems.length} of {items.length} items
-        </div>
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+        <Input
+          placeholder="Search items..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-8 h-8 text-sm"
+          data-testid="input-search"
+        />
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-slate-200 text-left">
-              <th 
-                className="pb-3 text-xs font-semibold text-slate-500 uppercase cursor-pointer hover:text-slate-700"
-                onClick={() => handleSort('name')}
-                data-testid="sort-name"
-              >
-                <span className="flex items-center gap-1">
-                  Item {getSortIndicator('name')}
-                  <ArrowUpDown className="w-3 h-3" />
-                </span>
-              </th>
-              <th 
-                className="pb-3 text-xs font-semibold text-slate-500 uppercase cursor-pointer hover:text-slate-700"
-                onClick={() => handleSort('quantity')}
-                data-testid="sort-quantity"
-              >
-                <span className="flex items-center gap-1">
-                  Quantity {getSortIndicator('quantity')}
-                  <ArrowUpDown className="w-3 h-3" />
-                </span>
-              </th>
-              <th className="pb-3 text-xs font-semibold text-slate-500 uppercase">Contract</th>
-              <th className="pb-3 text-xs font-semibold text-slate-500 uppercase">Supplier</th>
-              <th 
-                className="pb-3 text-xs font-semibold text-slate-500 uppercase text-right cursor-pointer hover:text-slate-700"
-                onClick={() => handleSort('price')}
-                data-testid="sort-price"
-              >
-                <span className="flex items-center gap-1 justify-end">
-                  Unit Price {getSortIndicator('price')}
-                  <ArrowUpDown className="w-3 h-3" />
-                </span>
-              </th>
-              <th 
-                className="pb-3 text-xs font-semibold text-slate-500 uppercase text-center cursor-pointer hover:text-slate-700"
-                onClick={() => handleSort('confidence')}
-                data-testid="sort-confidence"
-              >
-                <span className="flex items-center gap-1 justify-center">
-                  Confidence {getSortIndicator('confidence')}
-                  <ArrowUpDown className="w-3 h-3" />
-                </span>
-              </th>
-              <th className="pb-3 text-xs font-semibold text-slate-500 uppercase">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filteredAndSortedItems.map((item, index) => {
-              const product = getProduct(item.productId);
-              if (!product) return null;
+      <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+        {filteredItems.map((item, index) => {
+          const product = getProduct(item.productId);
+          if (!product) return null;
+          const conf = parseFloat(item.confidence);
 
-              return (
-                <tr key={index} className="hover:bg-slate-50 transition-colors" data-testid={`product-row-${index}`}>
-                  <td className="py-4">
-                    <div className="font-semibold text-slate-900">{product.name}</div>
-                    <div className="text-sm text-slate-500">{product.unitOfMeasure}</div>
-                  </td>
-                  <td className="py-4 text-slate-900">{item.quantity}</td>
-                  <td className="py-4">
-                    <Badge className="bg-purple-100 text-purple-700">
-                      {product.contract}
-                    </Badge>
-                  </td>
-                  <td className="py-4 text-slate-900">{product.supplier}</td>
-                  <td className="py-4 text-right font-mono text-slate-900">
-                    ${parseFloat(item.unitPrice).toFixed(2)}
-                  </td>
-                  <td className="py-4 text-center">
-                    <span className={`inline-flex items-center gap-1 text-sm font-semibold ${getConfidenceColor(item.confidence)}`}>
-                      {getConfidenceIcon(item.confidence)}
-                      {(parseFloat(item.confidence) * 100).toFixed(0)}%
+          return (
+            <div 
+              key={index} 
+              className="p-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all group"
+              data-testid={`product-row-${index}`}
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
+                  <Package className="w-4 h-4 text-gray-500 group-hover:text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="font-medium text-gray-900 text-sm leading-tight">{product.name}</h4>
+                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded shrink-0 flex items-center gap-1 ${getConfidenceColor(item.confidence)}`}>
+                      {conf >= 0.95 ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                      {(conf * 100).toFixed(0)}%
                     </span>
-                  </td>
-                  <td className="py-4">
-                    {getAvailabilityBadge(product.availability)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <span className="text-xs text-gray-500">{product.supplier}</span>
+                    <span className="text-xs text-gray-300">|</span>
+                    <span className="text-xs text-gray-500">Qty: {item.quantity}</span>
+                    <span className="text-xs text-gray-300">|</span>
+                    <span className="text-xs font-mono font-semibold text-gray-900">${parseFloat(item.unitPrice).toFixed(2)}/ea</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <Badge className="bg-purple-100 text-purple-700 text-[10px] px-1.5 py-0">{product.contract}</Badge>
+                    <Badge className={`text-[10px] px-1.5 py-0 ${product.availability === "In Stock" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
+                      {product.availability}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
 
-        {filteredAndSortedItems.length === 0 && (
-          <div className="text-center py-8 text-slate-500">
-            No items match your filters. Try adjusting your search criteria.
+        {filteredItems.length === 0 && (
+          <div className="text-center py-6 text-gray-500 text-sm">
+            No items match your search.
           </div>
         )}
       </div>
 
-      <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+      <div className="flex justify-between items-center pt-2 border-t border-gray-100">
         <Button
           onClick={onBack}
-          variant="outline"
-          className="btn-secondary flex items-center gap-2"
+          variant="ghost"
+          size="sm"
+          className="text-gray-600 h-9"
           data-testid="button-back-select"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4 mr-1" />
           Back
         </Button>
         <Button
           onClick={onNext}
-          className="btn-primary flex items-center gap-2"
+          size="sm"
+          className="bg-[#1e3a5f] hover:bg-[#15293f] text-white h-9"
           data-testid="button-continue-fit"
         >
-          Continue to Fit
-          <ArrowRight className="w-4 h-4" />
+          Continue
+          <ArrowRight className="w-4 h-4 ml-1" />
         </Button>
       </div>
     </div>
