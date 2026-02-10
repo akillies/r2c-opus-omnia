@@ -50,10 +50,10 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
     }
   }, [startTime]);
 
-  const { data: orderData, refetch: refetchOrder } = useQuery<OrderData>({
+  const { data: orderData, refetch: refetchOrder, isLoading: isOrderLoading } = useQuery<OrderData>({
     queryKey: ['/api/orders', orderId],
     enabled: !!orderId,
-    refetchOnMount: true
+    staleTime: 0,
   });
 
   const createOrderMutation = useMutation({
@@ -290,19 +290,21 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 <ProductMatching
                   items={orderData.items}
                   onBack={() => setCurrentStep(0)}
-                  onNext={() => setCurrentStep(2)}
+                  onNext={() => { refetchOrder(); setCurrentStep(2); }}
                   elapsedTime={elapsedTime}
                 />
               )}
 
-              {currentStep === 2 && orderData && (
+              {currentStep === 2 && (
                 <SmartSwaps
-                  swaps={orderData.swaps || []}
+                  swaps={orderData?.swaps || []}
                   onBack={() => setCurrentStep(1)}
                   onNext={() => setCurrentStep(3)}
                   onAcceptSwap={handleAcceptSwap}
                   onOpenComparison={handleOpenComparison}
                   isAccepting={acceptSwapMutation.isPending}
+                  isLoading={isOrderLoading || !orderData}
+                  itemCount={orderData?.items?.length || 0}
                 />
               )}
 

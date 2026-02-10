@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ShoppingCart, RotateCcw, Download, FileText, FileSpreadsheet, TrendingDown, Clock, ShieldCheck, Leaf, Zap, AlertTriangle, Users, Award, BarChart3 } from "lucide-react";
+import { ArrowLeft, ShoppingCart, RotateCcw, Download, FileText, FileSpreadsheet, TrendingDown, Clock, ShieldCheck, Leaf, Zap, AlertTriangle, Users, Award, BarChart3, CheckCircle2, Package, Sparkles } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Product } from "@shared/schema";
 import jsPDF from 'jspdf';
@@ -151,12 +151,17 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
     doc.save(`purchase-order-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
+  const totalValueCreated = valueMetrics?.totalValueCreated || 0;
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-bold text-gray-900 mb-0.5 text-sm sm:text-base">Order Summary</h3>
-          <p className="text-[10px] sm:text-xs text-gray-500">{items.length} items ready to submit</p>
+          <h3 className="font-bold text-gray-900 mb-0.5 text-sm sm:text-base flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-green-500" />
+            Order Ready
+          </h3>
+          <p className="text-[10px] sm:text-xs text-gray-500">{items.length} items optimized by R2C Agent</p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -179,61 +184,61 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
       </div>
 
       <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-lg p-2.5">
-        <div className="flex items-center gap-1.5 mb-1.5">
+        <div className="flex items-center gap-1.5 mb-2">
           <Zap className="w-3.5 h-3.5 text-emerald-600" />
           <span className="text-xs font-semibold text-emerald-800">Agent Impact Summary <span className="font-normal text-emerald-600">· VIA-powered</span></span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-          <div className="bg-white/80 rounded-lg p-1.5 border border-white">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-white/80 rounded-lg p-2 border border-white text-center">
             <Clock className="w-3.5 h-3.5 mx-auto text-blue-600 mb-0.5" />
-            <div className="text-xs font-bold text-gray-900">{elapsedTime ? formatTime(elapsedTime) : '< 5 min'}</div>
-            <div className="text-[8px] sm:text-[9px] text-gray-500">vs ~{manualEstimateMin}min manual</div>
+            <div className="text-sm font-bold text-gray-900">{elapsedTime ? formatTime(elapsedTime) : '< 2 min'}</div>
+            <div className="text-[8px] sm:text-[9px] text-gray-500">vs ~{manualEstimateMin} min manual</div>
           </div>
-          <div className="bg-white/80 rounded-lg p-1.5 border border-white">
+          <div className="bg-white/80 rounded-lg p-2 border border-white text-center">
             <TrendingDown className="w-3.5 h-3.5 mx-auto text-green-600 mb-0.5" />
-            <div className="text-xs font-bold text-gray-900">{savingsPercent}%</div>
-            <div className="text-[8px] sm:text-[9px] text-gray-500">cost reduction</div>
+            <div className="text-sm font-bold text-green-700">{acceptedSwaps} swap{acceptedSwaps !== 1 ? 's' : ''} applied</div>
+            <div className="text-[8px] sm:text-[9px] text-gray-500">of {swaps.length} recommended</div>
           </div>
-          <div className="bg-white/80 rounded-lg p-1.5 border border-white">
+          <div className="bg-white/80 rounded-lg p-2 border border-white text-center">
             <ShieldCheck className="w-3.5 h-3.5 mx-auto text-purple-600 mb-0.5" />
-            <div className="text-xs font-bold text-gray-900">{valueMetrics?.contractCompliance.rate ?? 100}%</div>
+            <div className="text-sm font-bold text-gray-900">{valueMetrics?.contractCompliance.rate ?? 100}%</div>
             <div className="text-[8px] sm:text-[9px] text-gray-500">cooperative compliant</div>
           </div>
-          <div className="bg-white/80 rounded-lg p-1.5 border border-white">
+          <div className="bg-white/80 rounded-lg p-2 border border-white text-center">
             <Leaf className="w-3.5 h-3.5 mx-auto text-green-600 mb-0.5" />
-            <div className="text-xs font-bold text-gray-900">{ecoSwaps}</div>
-            <div className="text-[8px] sm:text-[9px] text-gray-500">eco swaps</div>
+            <div className="text-sm font-bold text-gray-900">{valueMetrics?.sustainability.certifiedItemCount || 0}/{items.length}</div>
+            <div className="text-[8px] sm:text-[9px] text-gray-500">certified products</div>
           </div>
         </div>
       </div>
 
-      {valueMetrics && (
+      {valueMetrics && totalValueCreated > 0 && (
         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-2.5">
           <div className="flex items-center gap-1.5 mb-1.5">
             <BarChart3 className="w-3.5 h-3.5 text-indigo-600" />
-            <span className="text-xs font-semibold text-indigo-800">Multi-Dimensional Value</span>
+            <span className="text-xs font-semibold text-indigo-800">Multi-Dimensional Value Created</span>
           </div>
-          <div className="space-y-1.5 text-[10px] sm:text-[11px]">
+          <div className="space-y-1 text-[10px] sm:text-[11px]">
             {valueMetrics.directSavings > 0 && (
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1 text-gray-700">
-                  <TrendingDown className="w-3 h-3 text-green-500" />
+                <span className="flex items-center gap-1.5 text-gray-700">
+                  <TrendingDown className="w-3 h-3 text-green-500 shrink-0" />
                   Direct cost savings
                 </span>
                 <span className="font-bold text-green-700">${valueMetrics.directSavings.toFixed(2)}</span>
               </div>
             )}
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1 text-gray-700">
-                <ShieldCheck className="w-3 h-3 text-purple-500" />
+              <span className="flex items-center gap-1.5 text-gray-700">
+                <ShieldCheck className="w-3 h-3 text-purple-500 shrink-0" />
                 Maverick spend avoided
               </span>
               <span className="font-bold text-purple-700">${valueMetrics.maverickSpendAvoided.toFixed(0)}</span>
             </div>
             {valueMetrics.stockoutCostAvoided > 0 && (
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1 text-gray-700">
-                  <AlertTriangle className="w-3 h-3 text-amber-500" />
+                <span className="flex items-center gap-1.5 text-gray-700">
+                  <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
                   Stockout cost avoidance
                 </span>
                 <span className="font-bold text-amber-700">${valueMetrics.stockoutCostAvoided.toFixed(0)}</span>
@@ -241,32 +246,26 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
             )}
             {valueMetrics.sustainability.co2ReductionKg > 0 && (
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1 text-gray-700">
-                  <Leaf className="w-3 h-3 text-green-500" />
+                <span className="flex items-center gap-1.5 text-gray-700">
+                  <Leaf className="w-3 h-3 text-green-500 shrink-0" />
                   CO₂ reduction
                 </span>
                 <span className="font-bold text-green-700">{valueMetrics.sustainability.co2ReductionKg} kg</span>
               </div>
             )}
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1 text-gray-700">
-                <Users className="w-3 h-3 text-blue-500" />
+              <span className="flex items-center gap-1.5 text-gray-700">
+                <Users className="w-3 h-3 text-blue-500 shrink-0" />
                 Supplier consolidation
               </span>
-              <span className="font-bold text-blue-700">{valueMetrics.spendConsolidation.supplierCount} suppliers / {valueMetrics.spendConsolidation.categoryCount} categories</span>
+              <span className="font-bold text-blue-700">{valueMetrics.spendConsolidation.supplierCount} suppliers</span>
             </div>
-            {valueMetrics.sustainability.certifiedItemCount > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1 text-gray-700">
-                  <Award className="w-3 h-3 text-indigo-500" />
-                  Certified products
-                </span>
-                <span className="font-bold text-indigo-700">{valueMetrics.sustainability.certifiedItemCount}/{items.length} items</span>
-              </div>
-            )}
-            <div className="pt-1 mt-1 border-t border-indigo-200 flex items-center justify-between">
-              <span className="font-semibold text-indigo-900">Total value created</span>
-              <span className="font-bold text-indigo-900 text-xs">${valueMetrics.totalValueCreated.toFixed(0)}</span>
+            <div className="pt-1.5 mt-1 border-t border-indigo-200 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 font-semibold text-indigo-900">
+                <Sparkles className="w-3 h-3 shrink-0" />
+                Total value created
+              </span>
+              <span className="font-bold text-indigo-900 text-sm">${totalValueCreated.toFixed(0)}</span>
             </div>
           </div>
         </div>
@@ -289,7 +288,11 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
       </div>
 
       <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <div className="max-h-[200px] sm:max-h-[220px] overflow-y-auto divide-y divide-gray-100">
+        <div className="bg-gray-50 px-2.5 py-1.5 border-b border-gray-200 flex items-center gap-1.5">
+          <Package className="w-3 h-3 text-gray-500" />
+          <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Line Items</span>
+        </div>
+        <div className="max-h-[180px] sm:max-h-[200px] overflow-y-auto divide-y divide-gray-100">
           {items.map((item, index) => {
             const product = getProduct(item.productId);
             const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
@@ -297,23 +300,23 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
             const lineTotal = parseFloat(product.unitPrice) * item.quantity;
 
             return (
-              <div key={index} className="p-2.5 sm:p-3 hover:bg-gray-50 transition-colors" data-testid={`cart-item-${index}`}>
+              <div key={index} className="px-2.5 py-2 hover:bg-gray-50/50 transition-colors" data-testid={`cart-item-${index}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      <h4 className="font-medium text-gray-900 text-[11px] sm:text-sm truncate">{product.name}</h4>
+                      <h4 className="font-medium text-gray-900 text-[11px] sm:text-xs truncate">{product.name}</h4>
                       {swap && (
-                        <Badge className="bg-green-100 text-green-700 text-[8px] sm:text-[10px] px-1 py-0 shrink-0 flex items-center gap-0.5">
-                          <RotateCcw className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
+                        <Badge className="bg-green-100 text-green-700 text-[7px] sm:text-[8px] px-1 py-0 shrink-0 flex items-center gap-0.5">
+                          <RotateCcw className="w-2 h-2" />
                           Swapped
                         </Badge>
                       )}
                     </div>
-                    <p className="text-[10px] text-gray-500">
-                      {item.quantity} {product.unitOfMeasure} @ ${parseFloat(product.unitPrice).toFixed(2)} — {product.supplier}
+                    <p className="text-[9px] sm:text-[10px] text-gray-500">
+                      {item.quantity} × ${parseFloat(product.unitPrice).toFixed(2)} · {product.supplier}
                     </p>
                   </div>
-                  <span className="font-mono font-semibold text-gray-900 text-[11px] sm:text-sm shrink-0">${lineTotal.toFixed(2)}</span>
+                  <span className="font-mono font-semibold text-gray-900 text-[11px] sm:text-xs shrink-0">${lineTotal.toFixed(2)}</span>
                 </div>
               </div>
             );
@@ -325,7 +328,7 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
         <Button
           onClick={onSubmit}
           disabled={isSubmitting}
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white h-9 sm:h-10 font-semibold text-xs sm:text-sm"
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white h-9 sm:h-10 font-semibold text-xs sm:text-sm shadow-sm"
           data-testid="button-submit-order"
         >
           <ShoppingCart className="w-4 h-4 mr-2" />

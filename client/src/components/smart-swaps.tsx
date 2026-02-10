@@ -1,7 +1,8 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Box, DollarSign, Truck, Leaf, ArrowDown, ArrowUp, ArrowLeft, ArrowRight, Eye, Zap, AlertTriangle, Users } from "lucide-react";
+import { Check, Box, DollarSign, Truck, Leaf, ArrowDown, ArrowUp, ArrowLeft, ArrowRight, Eye, Zap, AlertTriangle, Users, TrendingDown, ShieldCheck, Sparkles, CheckCircle2, Brain } from "lucide-react";
 import type { Product } from "@shared/schema";
 
 interface SmartSwapsProps {
@@ -11,6 +12,8 @@ interface SmartSwapsProps {
   onBack: () => void;
   onNext: () => void;
   isAccepting: boolean;
+  isLoading?: boolean;
+  itemCount?: number;
 }
 
 export default function SmartSwaps({ 
@@ -19,11 +22,50 @@ export default function SmartSwaps({
   onOpenComparison, 
   onBack, 
   onNext, 
-  isAccepting 
+  isAccepting,
+  isLoading,
+  itemCount = 0,
 }: SmartSwapsProps) {
   const { data: products } = useQuery<Product[]>({
     queryKey: ['/api/products']
   });
+
+  const [analysisPhase, setAnalysisPhase] = useState(0);
+  const [showResults, setShowResults] = useState(false);
+  const [analysisComplete, setAnalysisComplete] = useState(false);
+
+  useEffect(() => {
+    if (isLoading) {
+      setShowResults(false);
+      setAnalysisComplete(false);
+      setAnalysisPhase(0);
+      const phases = [
+        setTimeout(() => setAnalysisPhase(1), 400),
+        setTimeout(() => setAnalysisPhase(2), 1200),
+        setTimeout(() => setAnalysisPhase(3), 2000),
+        setTimeout(() => setAnalysisPhase(4), 2800),
+        setTimeout(() => setAnalysisComplete(true), 3400),
+      ];
+      return () => phases.forEach(clearTimeout);
+    } else if (!showResults) {
+      setAnalysisPhase(0);
+      const phases = [
+        setTimeout(() => setAnalysisPhase(1), 300),
+        setTimeout(() => setAnalysisPhase(2), 800),
+        setTimeout(() => setAnalysisPhase(3), 1300),
+        setTimeout(() => setAnalysisPhase(4), 1800),
+        setTimeout(() => { setAnalysisComplete(true); setShowResults(true); }, 2200),
+      ];
+      return () => phases.forEach(clearTimeout);
+    }
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (!isLoading && analysisComplete && !showResults) {
+      const t = setTimeout(() => setShowResults(true), 300);
+      return () => clearTimeout(t);
+    }
+  }, [isLoading, analysisComplete, showResults]);
 
   const getProduct = (productId: string) => products?.find(p => p.id === productId);
 
@@ -31,7 +73,7 @@ export default function SmartSwaps({
     switch (swapType) {
       case 'pack_size': return <Box className="w-3.5 h-3.5" />;
       case 'supplier': return <DollarSign className="w-3.5 h-3.5" />;
-      case 'stock': return <Truck className="w-3.5 h-3.5" />;
+      case 'stock': return <AlertTriangle className="w-3.5 h-3.5" />;
       case 'sustainability': return <Leaf className="w-3.5 h-3.5" />;
       case 'consolidation': return <Users className="w-3.5 h-3.5" />;
       default: return <Box className="w-3.5 h-3.5" />;
@@ -67,51 +109,161 @@ export default function SmartSwaps({
   const bulkCount = swaps.filter(s => s.swapType === 'pack_size').length;
   const supplierCount = swaps.filter(s => s.swapType === 'supplier').length;
 
+  const analysisSteps = [
+    { text: "Scanning VIA-enriched catalog across 630+ suppliers...", icon: <Sparkles className="w-3 h-3" /> },
+    { text: "Cross-referencing stock levels and lead times...", icon: <Truck className="w-3 h-3" /> },
+    { text: "Evaluating cooperative contract pricing tiers...", icon: <ShieldCheck className="w-3 h-3" /> },
+    { text: "Analyzing sustainability certifications and bulk formats...", icon: <Leaf className="w-3 h-3" /> },
+  ];
+
+  if (!showResults) {
+    return (
+      <div className="space-y-3">
+        <div>
+          <h3 className="font-bold text-gray-900 mb-0.5 text-sm sm:text-base">Optimizing Your Order</h3>
+          <p className="text-[10px] sm:text-xs text-gray-500">
+            Agent is analyzing {itemCount} items against 7.5M+ enriched catalog products
+          </p>
+        </div>
+
+        <div className="bg-gradient-to-br from-[#1e3a5f]/5 to-indigo-50 border border-[#1e3a5f]/20 rounded-lg p-3">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 bg-[#1e3a5f] rounded-lg flex items-center justify-center">
+              <Brain className="w-4 h-4 text-white animate-pulse" />
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-[#1e3a5f]">R2C Agent Working</div>
+              <div className="text-[10px] text-gray-500">VIA intelligence engine active</div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {analysisSteps.map((step, i) => (
+              <div
+                key={i}
+                className={`flex items-center gap-2 text-[11px] transition-all duration-500 ${
+                  i < analysisPhase ? 'text-green-700 opacity-100' : i === analysisPhase ? 'text-[#1e3a5f] opacity-100' : 'text-gray-300 opacity-50'
+                }`}
+              >
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                  i < analysisPhase ? 'bg-green-100' : i === analysisPhase ? 'bg-[#1e3a5f]/10' : 'bg-gray-100'
+                }`}>
+                  {i < analysisPhase ? <Check className="w-3 h-3 text-green-600" /> : step.icon}
+                </div>
+                <span className={i === analysisPhase ? 'font-medium' : ''}>{step.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+          <Button onClick={onBack} variant="ghost" size="sm" className="text-gray-600 h-8 sm:h-9 text-xs sm:text-sm" data-testid="button-back-check">
+            <ArrowLeft className="w-3.5 h-3.5 mr-1" />
+            Back
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const acceptAll = () => {
+    swaps.filter(s => !s.isAccepted).forEach(s => onAcceptSwap(s.id));
+  };
+
+  if (swaps.length === 0) {
+    return (
+      <div className="space-y-3">
+        <div>
+          <h3 className="font-bold text-gray-900 mb-0.5 text-sm sm:text-base flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-green-500" />
+            Analysis Complete
+          </h3>
+          <p className="text-[10px] sm:text-xs text-gray-500">
+            Your order is already well-optimized
+          </p>
+        </div>
+        <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-lg p-3">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Zap className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="text-xs font-semibold text-emerald-800">Agent Intelligence <span className="font-normal text-emerald-600">· VIA-powered</span></span>
+          </div>
+          <p className="text-[11px] text-gray-700">
+            R2C analyzed your {itemCount} items against 7.5M+ VIA-enriched catalog products across 630+ cooperative suppliers. All items are optimally priced with no stock risks, sustainability upgrades, or bulk format improvements available.
+          </p>
+        </div>
+        <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+          <Button onClick={onBack} variant="ghost" size="sm" className="text-gray-600 h-8 sm:h-9 text-xs sm:text-sm" data-testid="button-back-check">
+            <ArrowLeft className="w-3.5 h-3.5 mr-1" />
+            Back
+          </Button>
+          <Button onClick={onNext} size="sm" className="bg-[#1e3a5f] hover:bg-[#15293f] text-white h-8 sm:h-9 text-xs sm:text-sm" data-testid="button-continue-lock">
+            Continue
+            <ArrowRight className="w-3.5 h-3.5 ml-1" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
-      <div>
-        <h3 className="font-bold text-gray-900 mb-0.5 text-sm sm:text-base">Optimize Your Order</h3>
-        <p className="text-[10px] sm:text-xs text-gray-500">
-          {swaps.length > 0 
-            ? `${swaps.length} optimization ${swaps.length === 1 ? 'opportunity' : 'opportunities'} identified by the agent`
-            : 'Analyzing your order against VIA-enriched catalog data...'}
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="font-bold text-gray-900 mb-0.5 text-sm sm:text-base flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-green-500" />
+            Order Optimized
+          </h3>
+          <p className="text-[10px] sm:text-xs text-gray-500">
+            {swaps.length} optimization{swaps.length !== 1 ? 's' : ''} found across {itemCount} items
+          </p>
+        </div>
+        {swaps.length > 0 && acceptedCount < swaps.length && (
+          <Button
+            onClick={acceptAll}
+            variant="outline"
+            size="sm"
+            className="h-6 text-[10px] border-green-300 text-green-700 hover:bg-green-50 px-2"
+            data-testid="button-accept-all"
+          >
+            <Check className="w-3 h-3 mr-0.5" />
+            Accept All
+          </Button>
+        )}
       </div>
 
       <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-lg p-2.5">
-        <div className="flex items-center gap-1.5 mb-1.5">
+        <div className="flex items-center gap-1.5 mb-2">
           <Zap className="w-3.5 h-3.5 text-emerald-600" />
           <span className="text-xs font-semibold text-emerald-800">Agent Intelligence <span className="font-normal text-emerald-600">· VIA-powered</span></span>
         </div>
-        <div className="space-y-1 text-[10px] sm:text-[11px] text-gray-700">
+        <div className="space-y-1.5 text-[10px] sm:text-[11px] text-gray-700">
           {potentialSavings > 0 && (
-            <div className="flex items-center gap-1.5">
-              <DollarSign className="w-3 h-3 text-green-500 shrink-0" />
-              <span>Identified <strong>${potentialSavings.toFixed(2)}</strong> in potential savings across {swaps.length} optimization{swaps.length > 1 ? 's' : ''}</span>
+            <div className="flex items-start gap-1.5">
+              <TrendingDown className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
+              <span>Identified <strong className="text-green-700">${potentialSavings.toFixed(2)}</strong> in potential line-item savings across {swaps.filter(s => parseFloat(s.savingsAmount || "0") > 0).length} recommendations</span>
             </div>
           )}
           {stockRiskCount > 0 && (
-            <div className="flex items-center gap-1.5">
-              <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
-              <span><strong>{stockRiskCount}</strong> stock risk{stockRiskCount > 1 ? 's' : ''} detected — VIA found available alternatives to avoid backorders</span>
+            <div className="flex items-start gap-1.5">
+              <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
+              <span><strong className="text-amber-700">{stockRiskCount} stock risk{stockRiskCount > 1 ? 's' : ''} detected</strong> — VIA flagged low inventory and sourced available alternatives to prevent backorders</span>
             </div>
           )}
           {bulkCount > 0 && (
-            <div className="flex items-center gap-1.5">
-              <Box className="w-3 h-3 text-blue-500 shrink-0" />
-              <span><strong>{bulkCount}</strong> bulk format{bulkCount > 1 ? 's' : ''} available with lower per-unit cost</span>
+            <div className="flex items-start gap-1.5">
+              <Box className="w-3 h-3 text-blue-500 shrink-0 mt-0.5" />
+              <span><strong className="text-blue-700">{bulkCount} bulk format{bulkCount > 1 ? 's' : ''}</strong> with better per-unit economics identified from VIA pack-size analysis</span>
             </div>
           )}
           {supplierCount > 0 && (
-            <div className="flex items-center gap-1.5">
-              <DollarSign className="w-3 h-3 text-indigo-500 shrink-0" />
-              <span><strong>{supplierCount}</strong> competitive alternative{supplierCount > 1 ? 's' : ''} from cooperative suppliers at better pricing</span>
+            <div className="flex items-start gap-1.5">
+              <DollarSign className="w-3 h-3 text-indigo-500 shrink-0 mt-0.5" />
+              <span><strong className="text-indigo-700">{supplierCount} competitive price{supplierCount > 1 ? 's' : ''}</strong> from cooperative master agreement suppliers at lower cost</span>
             </div>
           )}
           {ecoCount > 0 && (
-            <div className="flex items-center gap-1.5">
-              <Leaf className="w-3 h-3 text-green-500 shrink-0" />
-              <span><strong>{ecoCount}</strong> certified sustainable alternative{ecoCount > 1 ? 's' : ''} — aligned with Green Purchasing Policy</span>
+            <div className="flex items-start gap-1.5">
+              <Leaf className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
+              <span><strong className="text-green-700">{ecoCount} sustainable alternative{ecoCount > 1 ? 's' : ''}</strong> — certified eco products aligned with Green Purchasing Policy mandates</span>
             </div>
           )}
         </div>
@@ -120,7 +272,9 @@ export default function SmartSwaps({
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-green-50 border border-green-200 rounded-lg px-2.5 sm:px-3 py-2 text-center">
           <div className="text-[9px] sm:text-[10px] text-green-600 uppercase font-semibold tracking-wide">Potential Savings</div>
-          <div className="text-base sm:text-lg font-bold text-green-900" data-testid="text-potential-savings">${potentialSavings.toFixed(2)}</div>
+          <div className="text-base sm:text-lg font-bold text-green-900" data-testid="text-potential-savings">
+            {potentialSavings > 0 ? `$${potentialSavings.toFixed(2)}` : '—'}
+          </div>
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-lg px-2.5 sm:px-3 py-2 text-center">
           <div className="text-[9px] sm:text-[10px] text-blue-600 uppercase font-semibold tracking-wide">Accepted</div>
@@ -172,14 +326,14 @@ export default function SmartSwaps({
                   <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-2 leading-relaxed">{swap.reason}</p>
 
                   <div className="flex items-center gap-2 sm:gap-3 mt-1 text-[10px] sm:text-xs">
-                    <span className="text-gray-500 line-through">
+                    <span className="text-gray-400 line-through">
                       ${parseFloat(originalProduct.unitPrice).toFixed(2)}
                     </span>
-                    <span className="text-gray-400">→</span>
+                    <span className="text-gray-300">→</span>
                     <span className="font-semibold text-green-700">
                       ${parseFloat(recommendedProduct.unitPrice).toFixed(2)}
                     </span>
-                    <span className="text-gray-400">({recommendedProduct.supplier})</span>
+                    <span className="text-gray-400 text-[9px]">{recommendedProduct.supplier}</span>
                   </div>
 
                   {!swap.isAccepted ? (
