@@ -154,6 +154,14 @@ R2C is powered by EIS's VIA platform — the data processing and enrichment tech
 
 # Recent Changes
 
+**February 2026 - Chat Assistant Interface & Price Fix**
+- Added conversational chat input at bottom of R2C assistant panel for follow-up questions
+- Chat supports contextual responses about order items, pricing, swaps, compliance, sustainability, exports
+- Message bubbles with user (navy) and bot (white) styling, typing indicator animation
+- Fixed zero-dollar totals: CartSummary now uses item.unitPrice (stored on order items) as primary price source instead of depending on product catalog lookups
+- All line item displays, exports (PDF/CSV), and audit trail consistently use item.unitPrice
+- Chat messages reset on new order creation
+
 **February 2026 - Full-Screen Expand & Credits**
 - Added full-screen expand/collapse toggle to R2C sidebar agent panel (Expand/Shrink button in header)
 - Expanded mode: full-screen takeover with OPUS branding in header, max-width content container, Earley Information Science link
