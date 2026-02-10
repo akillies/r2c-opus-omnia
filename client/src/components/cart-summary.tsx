@@ -33,6 +33,7 @@ interface CartSummaryProps {
   isSubmitting: boolean;
   elapsedTime?: number;
   orderId?: string;
+  isExpanded?: boolean;
 }
 
 interface ValueMetrics {
@@ -46,9 +47,9 @@ interface ValueMetrics {
   totalValueCreated: number;
 }
 
-export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit, isSubmitting, elapsedTime, orderId }: CartSummaryProps) {
-  const [showAuditTrail, setShowAuditTrail] = useState(false);
-  const [showValueDetails, setShowValueDetails] = useState(false);
+export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit, isSubmitting, elapsedTime, orderId, isExpanded = false }: CartSummaryProps) {
+  const [showAuditTrail, setShowAuditTrail] = useState(isExpanded);
+  const [showValueDetails, setShowValueDetails] = useState(isExpanded);
 
   const { data: products } = useQuery<Product[]>({
     queryKey: ['/api/products']
@@ -227,7 +228,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
           <Zap className="w-3.5 h-3.5 text-emerald-600" />
           <span className="text-xs font-semibold text-emerald-800">Agent Impact Summary <span className="font-normal text-emerald-600">· VIA-powered</span></span>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className={`grid ${isExpanded ? 'grid-cols-4' : 'grid-cols-2'} gap-2`}>
           <div className="bg-white/80 rounded-lg p-2 border border-white text-center">
             <Clock className="w-3.5 h-3.5 mx-auto text-blue-600 mb-0.5" />
             <div className="text-sm font-bold text-gray-900">{elapsedTime ? formatTime(elapsedTime) : '< 2 min'}</div>
@@ -385,37 +386,83 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
       <div className="border border-gray-200 rounded-lg overflow-hidden">
         <div className="bg-gray-50 px-2.5 py-1.5 border-b border-gray-200 flex items-center gap-1.5">
           <Package className="w-3 h-3 text-gray-500" />
-          <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Line Items</span>
+          <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Line Items ({items.length})</span>
         </div>
-        <div className="max-h-[180px] sm:max-h-[200px] overflow-y-auto divide-y divide-gray-100">
-          {items.map((item, index) => {
-            const product = getProduct(item.productId);
-            const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
-            if (!product) return null;
-            const lineTotal = parseFloat(product.unitPrice) * item.quantity;
-
-            return (
-              <div key={index} className="px-2.5 py-2 hover:bg-gray-50/50 transition-colors" data-testid={`cart-item-${index}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <h4 className="font-medium text-gray-900 text-[11px] sm:text-xs truncate">{product.name}</h4>
-                      {swap && (
-                        <Badge className="bg-green-100 text-green-700 text-[7px] sm:text-[8px] px-1 py-0 shrink-0 flex items-center gap-0.5">
-                          <RotateCcw className="w-2 h-2" />
-                          Swapped
-                        </Badge>
-                      )}
+        <div className={`${isExpanded ? 'max-h-none' : 'max-h-[180px] sm:max-h-[200px]'} overflow-y-auto divide-y divide-gray-100`}>
+          {isExpanded ? (
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="bg-gray-50 text-[9px] text-gray-500 uppercase tracking-wide">
+                  <th className="px-2.5 py-1.5 text-left font-semibold">Product</th>
+                  <th className="px-2 py-1.5 text-left font-semibold">Supplier</th>
+                  <th className="px-2 py-1.5 text-left font-semibold">Contract</th>
+                  <th className="px-2 py-1.5 text-center font-semibold">Qty</th>
+                  <th className="px-2 py-1.5 text-right font-semibold">Unit Price</th>
+                  <th className="px-2 py-1.5 text-right font-semibold">Line Total</th>
+                  <th className="px-2 py-1.5 text-center font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {items.map((item, index) => {
+                  const product = getProduct(item.productId);
+                  const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
+                  if (!product) return null;
+                  const lineTotal = parseFloat(product.unitPrice) * item.quantity;
+                  return (
+                    <tr key={index} className="hover:bg-gray-50/50 transition-colors" data-testid={`cart-item-${index}`}>
+                      <td className="px-2.5 py-2">
+                        <div className="font-medium text-gray-900">{product.name}</div>
+                        {product.brand && <div className="text-[9px] text-gray-400">{product.brand} · {product.mpn}</div>}
+                      </td>
+                      <td className="px-2 py-2 text-gray-600">{product.supplier}</td>
+                      <td className="px-2 py-2 text-purple-600 text-[10px]">{product.contract || '—'}</td>
+                      <td className="px-2 py-2 text-center text-gray-700">{item.quantity}</td>
+                      <td className="px-2 py-2 text-right font-mono text-gray-700">${parseFloat(product.unitPrice).toFixed(2)}</td>
+                      <td className="px-2 py-2 text-right font-mono font-semibold text-gray-900">${lineTotal.toFixed(2)}</td>
+                      <td className="px-2 py-2 text-center">
+                        {swap ? (
+                          <Badge className="bg-green-100 text-green-700 text-[7px] px-1 py-0 flex items-center gap-0.5 justify-center">
+                            <RotateCcw className="w-2 h-2" />
+                            Swapped
+                          </Badge>
+                        ) : (
+                          <span className="text-[9px] text-gray-400">Original</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            items.map((item, index) => {
+              const product = getProduct(item.productId);
+              const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
+              if (!product) return null;
+              const lineTotal = parseFloat(product.unitPrice) * item.quantity;
+              return (
+                <div key={index} className="px-2.5 py-2 hover:bg-gray-50/50 transition-colors" data-testid={`cart-item-${index}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <h4 className="font-medium text-gray-900 text-[11px] sm:text-xs truncate">{product.name}</h4>
+                        {swap && (
+                          <Badge className="bg-green-100 text-green-700 text-[7px] sm:text-[8px] px-1 py-0 shrink-0 flex items-center gap-0.5">
+                            <RotateCcw className="w-2 h-2" />
+                            Swapped
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-[9px] sm:text-[10px] text-gray-500">
+                        {item.quantity} × ${parseFloat(product.unitPrice).toFixed(2)} · {product.supplier}
+                      </p>
                     </div>
-                    <p className="text-[9px] sm:text-[10px] text-gray-500">
-                      {item.quantity} × ${parseFloat(product.unitPrice).toFixed(2)} · {product.supplier}
-                    </p>
+                    <span className="font-mono font-semibold text-gray-900 text-[11px] sm:text-xs shrink-0">${lineTotal.toFixed(2)}</span>
                   </div>
-                  <span className="font-mono font-semibold text-gray-900 text-[11px] sm:text-xs shrink-0">${lineTotal.toFixed(2)}</span>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -434,7 +481,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
         </button>
 
         {showAuditTrail && (
-          <div className="max-h-[250px] overflow-y-auto divide-y divide-gray-100 animate-in fade-in slide-in-from-top-1 duration-200" data-testid="audit-trail-list">
+          <div className={`${isExpanded ? 'max-h-none' : 'max-h-[250px]'} overflow-y-auto divide-y divide-gray-100 animate-in fade-in slide-in-from-top-1 duration-200`} data-testid="audit-trail-list">
             {items.map((item, index) => {
               const product = getProduct(item.productId);
               const originalProduct = getProduct(item.originalProductId || item.productId);
@@ -444,7 +491,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
               if (!product) return null;
 
               return (
-                <div key={index} className="px-2.5 py-2" data-testid={`audit-item-${index}`}>
+                <div key={index} className={`px-2.5 py-2 ${isExpanded ? 'py-3' : ''}`} data-testid={`audit-item-${index}`}>
                   <div className="flex items-start gap-2">
                     <div className="flex flex-col items-center gap-0.5 shrink-0 pt-0.5">
                       <div className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center">
@@ -473,6 +520,15 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                       <div>
                         <div className="text-[8px] text-blue-500 uppercase tracking-wide font-semibold">Matched</div>
                         <div className="text-[10px] text-gray-900 font-medium">{originalProduct?.name || product.name}</div>
+                        {isExpanded && originalProduct && (
+                          <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[9px] text-gray-400">
+                            <span>{originalProduct.supplier}</span>
+                            <span>${parseFloat(originalProduct.unitPrice).toFixed(2)}/{originalProduct.unitOfMeasure}</span>
+                            {originalProduct.brand && <span>{originalProduct.brand}</span>}
+                            {originalProduct.contract && <span className="text-purple-500">{originalProduct.contract}</span>}
+                            {originalProduct.unspsc && <span className="text-slate-400">UNSPSC {originalProduct.unspsc}</span>}
+                          </div>
+                        )}
                         <div className="text-[9px] text-gray-400">
                           {meta?.matchDetails ? (
                             <span>
@@ -488,11 +544,33 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                           {' · '}
                           {(parseFloat(item.confidence) * 100).toFixed(0)}% confidence
                         </div>
+                        {isExpanded && meta?.matchDetails && (
+                          <div className="mt-0.5 flex flex-wrap gap-1">
+                            {meta.matchDetails.exactTerms.map((t, i) => (
+                              <span key={`e${i}`} className="bg-green-50 text-green-600 text-[8px] px-1 rounded border border-green-200">{t}</span>
+                            ))}
+                            {meta.matchDetails.synonymTerms.map((t, i) => (
+                              <span key={`s${i}`} className="bg-teal-50 text-teal-600 text-[8px] px-1 rounded border border-teal-200">{t}</span>
+                            ))}
+                            {meta.matchDetails.fuzzyTerms.map((t, i) => (
+                              <span key={`f${i}`} className="bg-orange-50 text-orange-600 text-[8px] px-1 rounded border border-orange-200">{t}</span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       {swapData && (
                         <div>
                           <div className="text-[8px] text-green-500 uppercase tracking-wide font-semibold">Swapped</div>
                           <div className="text-[10px] text-green-800 font-medium">{product.name}</div>
+                          {isExpanded && (
+                            <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[9px] text-green-600">
+                              <span>{product.supplier}</span>
+                              <span>${parseFloat(product.unitPrice).toFixed(2)}/{product.unitOfMeasure}</span>
+                              {product.certifications && product.certifications.length > 0 && (
+                                <span className="flex items-center gap-0.5"><Award className="w-2.5 h-2.5" />{product.certifications.join(', ')}</span>
+                              )}
+                            </div>
+                          )}
                           <div className="text-[9px] text-gray-400">
                             {swapData.swapType === 'stock' && 'Stock risk mitigated'}
                             {swapData.swapType === 'pack_size' && 'Bulk format savings'}
@@ -500,6 +578,9 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                             {swapData.swapType === 'sustainability' && 'Eco upgrade'}
                             {parseFloat(swapData.savingsAmount || '0') > 0 && ` · saved $${parseFloat(swapData.savingsAmount).toFixed(2)}`}
                           </div>
+                          {isExpanded && swapData.reason && (
+                            <div className="text-[9px] text-gray-400 mt-0.5 italic leading-relaxed">{swapData.reason}</div>
+                          )}
                         </div>
                       )}
                     </div>

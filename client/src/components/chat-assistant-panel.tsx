@@ -165,16 +165,24 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
 
   function getDemoMatchMeta(): MatchedItemMeta[] {
     return [
-      { productId: "prod-07", requestedName: "Cotton Mop Heads #24", matchDetails: { exactTerms: ["mop", "head", "cotton"], fuzzyTerms: ["mop≈mops"], synonymTerms: ["mopping", "floor mop"], categoryBoost: true } },
-      { productId: "prod-46", requestedName: "Hand Soap Foam Refill", matchDetails: { exactTerms: ["hand", "soap", "foam"], fuzzyTerms: [], synonymTerms: ["wash", "cleanser"], categoryBoost: true } },
-      { productId: "prod-39", requestedName: "LED Light Bulbs 60W", matchDetails: { exactTerms: ["led", "light", "bulb"], fuzzyTerms: ["bulb≈bulbs"], synonymTerms: ["lamp", "light bulb"], categoryBoost: true } },
-      { productId: "prod-11", requestedName: "Copy Paper 8.5x11", matchDetails: { exactTerms: ["copy", "paper", "8.5x11"], fuzzyTerms: [], synonymTerms: ["sheets", "ream"], categoryBoost: true } },
-      { productId: "prod-09", requestedName: "Trash Bags 55 Gallon", matchDetails: { exactTerms: ["trash", "55", "gallon"], fuzzyTerms: [], synonymTerms: ["garbage", "waste", "liner", "bag"], categoryBoost: true } },
-      { productId: "prod-21", requestedName: "Nitrile Gloves Medium", matchDetails: { exactTerms: ["nitrile", "gloves", "medium"], fuzzyTerms: [], synonymTerms: ["glove", "hand protection"], categoryBoost: true } },
-      { productId: "prod-27", requestedName: "Paper Towels C-Fold", matchDetails: { exactTerms: ["paper", "towel"], fuzzyTerms: ["towel≈towels"], synonymTerms: ["cloth", "wipe", "hand towel", "folded towel", "c-fold"], categoryBoost: true } },
-      { productId: "prod-32", requestedName: "First Aid Kit Workplace", matchDetails: { exactTerms: ["first", "aid", "kit"], fuzzyTerms: [], synonymTerms: ["medical", "emergency", "trauma"], categoryBoost: true } },
-      { productId: "prod-35", requestedName: "AA Batteries Bulk", matchDetails: { exactTerms: ["batteries"], fuzzyTerms: ["battery≈batteries"], synonymTerms: ["battery", "cells"], categoryBoost: true } },
       { productId: "prod-01", requestedName: "Floor Cleaner Concentrate", matchDetails: { exactTerms: ["floor", "cleaner", "concentrate"], fuzzyTerms: [], synonymTerms: ["cleaning", "detergent", "solution"], categoryBoost: true } },
+      { productId: "prod-03", requestedName: "Microfiber Cleaning Cloths 16\"", matchDetails: { exactTerms: ["microfiber", "cleaning", "cloth"], fuzzyTerms: ["cloth≈cloths"], synonymTerms: ["wipe", "rag", "towel"], categoryBoost: true } },
+      { productId: "prod-05", requestedName: "Disinfectant Spray 32oz Quat", matchDetails: { exactTerms: ["disinfectant", "spray", "32oz"], fuzzyTerms: [], synonymTerms: ["sanitizer", "antimicrobial"], categoryBoost: true } },
+      { productId: "prod-07", requestedName: "Cotton Mop Heads #24", matchDetails: { exactTerms: ["mop", "head", "cotton"], fuzzyTerms: ["mop≈mops"], synonymTerms: ["mopping", "floor mop"], categoryBoost: true } },
+      { productId: "prod-09", requestedName: "Trash Bags 55 Gallon Heavy Duty", matchDetails: { exactTerms: ["trash", "55", "gallon"], fuzzyTerms: [], synonymTerms: ["garbage", "waste", "liner", "bag"], categoryBoost: true } },
+      { productId: "prod-11", requestedName: "Copy Paper 8.5x11 Ream", matchDetails: { exactTerms: ["copy", "paper", "8.5x11"], fuzzyTerms: [], synonymTerms: ["sheets", "ream", "letter size"], categoryBoost: true } },
+      { productId: "prod-15", requestedName: "Invisible Tape 3/4 inch", matchDetails: { exactTerms: ["invisible", "tape"], fuzzyTerms: ["tape≈tapes"], synonymTerms: ["adhesive", "scotch"], categoryBoost: true } },
+      { productId: "prod-21", requestedName: "Nitrile Gloves Medium Powder-Free", matchDetails: { exactTerms: ["nitrile", "gloves", "medium"], fuzzyTerms: [], synonymTerms: ["glove", "hand protection", "exam"], categoryBoost: true } },
+      { productId: "prod-27", requestedName: "Hard Hat White Type I", matchDetails: { exactTerms: ["hard", "hat", "white"], fuzzyTerms: [], synonymTerms: ["helmet", "head protection"], categoryBoost: true } },
+      { productId: "prod-29", requestedName: "Paper Coffee Cups 12oz", matchDetails: { exactTerms: ["cup", "12oz", "paper"], fuzzyTerms: ["cup≈cups"], synonymTerms: ["hot cup", "beverage"], categoryBoost: true } },
+      { productId: "prod-31", requestedName: "Coffee Ground Medium Roast", matchDetails: { exactTerms: ["coffee", "medium", "roast"], fuzzyTerms: [], synonymTerms: ["brew", "ground coffee", "fraction pack"], categoryBoost: true } },
+      { productId: "prod-35", requestedName: "AA Batteries Bulk Pack", matchDetails: { exactTerms: ["batteries", "aa"], fuzzyTerms: ["battery≈batteries"], synonymTerms: ["alkaline", "cells", "power"], categoryBoost: true } },
+      { productId: "prod-37", requestedName: "HVAC Air Filters 20x25x1", matchDetails: { exactTerms: ["air", "filter", "20x25x1"], fuzzyTerms: ["filter≈filters"], synonymTerms: ["hvac", "pleated", "furnace"], categoryBoost: true } },
+      { productId: "prod-39", requestedName: "LED Light Tubes T8 4ft", matchDetails: { exactTerms: ["led", "tube", "t8", "4ft"], fuzzyTerms: ["light≈lighting"], synonymTerms: ["lamp", "fluorescent replacement"], categoryBoost: true } },
+      { productId: "prod-41", requestedName: "N95 Respirator Masks NIOSH", matchDetails: { exactTerms: ["n95", "respirator"], fuzzyTerms: ["mask≈masks"], synonymTerms: ["dust mask", "breathing protection"], categoryBoost: true } },
+      { productId: "prod-43", requestedName: "First Aid Kit 50 Person", matchDetails: { exactTerms: ["first", "aid", "kit"], fuzzyTerms: [], synonymTerms: ["medical", "emergency", "ansi"], categoryBoost: true } },
+      { productId: "prod-46", requestedName: "Foam Hand Soap Refill 1250mL", matchDetails: { exactTerms: ["foam", "hand", "soap"], fuzzyTerms: [], synonymTerms: ["wash", "cleanser", "dispenser refill"], categoryBoost: true } },
+      { productId: "prod-50", requestedName: "Instant Cold Packs First Aid", matchDetails: { exactTerms: ["cold", "pack", "instant"], fuzzyTerms: [], synonymTerms: ["ice pack", "compress"], categoryBoost: true } },
     ];
   }
 
@@ -352,6 +360,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                   isAccepting={acceptSwapMutation.isPending}
                   isLoading={isOrderLoading || !orderData}
                   itemCount={orderData?.items?.length || 0}
+                  isExpanded={isExpanded}
                 />
               )}
 
@@ -365,6 +374,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                   isSubmitting={submitOrderMutation.isPending}
                   elapsedTime={elapsedTime}
                   orderId={orderId || undefined}
+                  isExpanded={isExpanded}
                 />
               )}
             </div>

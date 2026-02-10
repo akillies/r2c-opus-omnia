@@ -83,16 +83,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else {
         const sampleItems = [
-          { productId: "prod-07", quantity: 24, unitPrice: "8.50", confidence: "0.96" },
-          { productId: "prod-46", quantity: 30, unitPrice: "18.99", confidence: "0.97" },
-          { productId: "prod-39", quantity: 20, unitPrice: "16.99", confidence: "0.95" },
-          { productId: "prod-11", quantity: 15, unitPrice: "42.99", confidence: "0.98" },
-          { productId: "prod-09", quantity: 10, unitPrice: "45.00", confidence: "0.99" },
-          { productId: "prod-21", quantity: 50, unitPrice: "14.99", confidence: "0.98" },
-          { productId: "prod-27", quantity: 15, unitPrice: "18.99", confidence: "0.94" },
-          { productId: "prod-32", quantity: 8, unitPrice: "64.99", confidence: "0.93" },
-          { productId: "prod-35", quantity: 6, unitPrice: "42.50", confidence: "0.92" },
           { productId: "prod-01", quantity: 12, unitPrice: "18.50", confidence: "0.94" },
+          { productId: "prod-03", quantity: 20, unitPrice: "24.99", confidence: "0.96" },
+          { productId: "prod-05", quantity: 48, unitPrice: "4.89", confidence: "0.97" },
+          { productId: "prod-07", quantity: 36, unitPrice: "8.50", confidence: "0.95" },
+          { productId: "prod-09", quantity: 10, unitPrice: "45.00", confidence: "0.99" },
+          { productId: "prod-11", quantity: 25, unitPrice: "42.99", confidence: "0.98" },
+          { productId: "prod-15", quantity: 8, unitPrice: "3.29", confidence: "0.91" },
+          { productId: "prod-21", quantity: 60, unitPrice: "14.99", confidence: "0.98" },
+          { productId: "prod-27", quantity: 30, unitPrice: "18.99", confidence: "0.94" },
+          { productId: "prod-29", quantity: 5, unitPrice: "58.00", confidence: "0.93" },
+          { productId: "prod-31", quantity: 40, unitPrice: "64.99", confidence: "0.97" },
+          { productId: "prod-35", quantity: 15, unitPrice: "42.50", confidence: "0.92" },
+          { productId: "prod-37", quantity: 4, unitPrice: "72.00", confidence: "0.96" },
+          { productId: "prod-39", quantity: 30, unitPrice: "16.99", confidence: "0.95" },
+          { productId: "prod-41", quantity: 6, unitPrice: "89.99", confidence: "0.94" },
+          { productId: "prod-43", quantity: 24, unitPrice: "18.99", confidence: "0.93" },
+          { productId: "prod-46", quantity: 20, unitPrice: "52.00", confidence: "0.97" },
+          { productId: "prod-50", quantity: 10, unitPrice: "34.99", confidence: "0.92" },
         ];
 
         for (const item of sampleItems) {

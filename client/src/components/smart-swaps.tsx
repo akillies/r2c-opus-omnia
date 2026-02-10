@@ -14,6 +14,7 @@ interface SmartSwapsProps {
   isAccepting: boolean;
   isLoading?: boolean;
   itemCount?: number;
+  isExpanded?: boolean;
 }
 
 export default function SmartSwaps({ 
@@ -25,6 +26,7 @@ export default function SmartSwaps({
   isAccepting,
   isLoading,
   itemCount = 0,
+  isExpanded = false,
 }: SmartSwapsProps) {
   const { data: products } = useQuery<Product[]>({
     queryKey: ['/api/products']
@@ -321,7 +323,7 @@ export default function SmartSwaps({
         </div>
       </div>
 
-      <div className="space-y-2 max-h-[250px] sm:max-h-[300px] overflow-y-auto pr-1">
+      <div className={`${isExpanded ? 'grid grid-cols-2 gap-3' : 'space-y-2 max-h-[250px] sm:max-h-[300px] overflow-y-auto pr-1'}`}>
         {swaps.map((swap, index) => {
           const originalProduct = getProduct(swap.originalProductId);
           const recommendedProduct = getProduct(swap.recommendedProductId);
@@ -362,18 +364,45 @@ export default function SmartSwaps({
                     ) : null}
                   </div>
 
-                  <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-2 leading-relaxed">{swap.reason}</p>
+                  <p className={`text-[10px] text-gray-500 mt-0.5 leading-relaxed ${isExpanded ? '' : 'line-clamp-2'}`}>{swap.reason}</p>
 
-                  <div className="flex items-center gap-2 sm:gap-3 mt-1 text-[10px] sm:text-xs">
-                    <span className="text-gray-400 line-through">
-                      ${parseFloat(originalProduct.unitPrice).toFixed(2)}
-                    </span>
-                    <span className="text-gray-300">→</span>
-                    <span className="font-semibold text-green-700">
-                      ${parseFloat(recommendedProduct.unitPrice).toFixed(2)}
-                    </span>
-                    <span className="text-gray-400 text-[9px]">{recommendedProduct.supplier}</span>
-                  </div>
+                  {isExpanded && (
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-[10px]">
+                      <div className="bg-gray-50 rounded p-1.5">
+                        <div className="text-gray-400 uppercase text-[8px] font-semibold tracking-wide">Current</div>
+                        <div className="font-medium text-gray-700 truncate">{originalProduct.name}</div>
+                        <div className="text-gray-500">{originalProduct.supplier} · ${parseFloat(originalProduct.unitPrice).toFixed(2)}/{originalProduct.unitOfMeasure}</div>
+                        {originalProduct.packSize && <div className="text-gray-400">Pack: {originalProduct.packSize} {originalProduct.packUnit || 'ct'}</div>}
+                        {originalProduct.contract && <div className="text-purple-500 truncate">{originalProduct.contract}</div>}
+                      </div>
+                      <div className="bg-green-50 rounded p-1.5">
+                        <div className="text-green-600 uppercase text-[8px] font-semibold tracking-wide">Recommended</div>
+                        <div className="font-medium text-green-800 truncate">{recommendedProduct.name}</div>
+                        <div className="text-green-700">{recommendedProduct.supplier} · ${parseFloat(recommendedProduct.unitPrice).toFixed(2)}/{recommendedProduct.unitOfMeasure}</div>
+                        {recommendedProduct.packSize && <div className="text-green-600">Pack: {recommendedProduct.packSize} {recommendedProduct.packUnit || 'ct'}</div>}
+                        {recommendedProduct.certifications && recommendedProduct.certifications.length > 0 && (
+                          <div className="flex flex-wrap gap-0.5 mt-0.5">
+                            {recommendedProduct.certifications.map((cert: string, i: number) => (
+                              <span key={i} className="bg-green-100 text-green-700 text-[7px] px-1 rounded">{cert}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {!isExpanded && (
+                    <div className="flex items-center gap-2 sm:gap-3 mt-1 text-[10px] sm:text-xs">
+                      <span className="text-gray-400 line-through">
+                        ${parseFloat(originalProduct.unitPrice).toFixed(2)}
+                      </span>
+                      <span className="text-gray-300">→</span>
+                      <span className="font-semibold text-green-700">
+                        ${parseFloat(recommendedProduct.unitPrice).toFixed(2)}
+                      </span>
+                      <span className="text-gray-400 text-[9px]">{recommendedProduct.supplier}</span>
+                    </div>
+                  )}
 
                   {!swap.isAccepted ? (
                     <div className="flex items-center gap-2 mt-2">
