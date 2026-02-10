@@ -1,6 +1,6 @@
 # Overview
 
-R2C (Requirements 2 Cart) by EIS × OPUS/OMNIA Partners — an agentic commerce system for procurement that autonomously converts RFQs into optimized purchase orders. Built on EIS's enterprise content foundation (schema governance, taxonomy optimization, content enrichment, search tuning), R2C acts on behalf of procurement officers to parse documents, match products against 7.5M+ enriched catalog items across 630+ cooperative suppliers, enforce cooperative contract compliance, optimize costs through intelligent swap recommendations, manage stock risks, and advance sustainability goals.
+R2C (Requirements 2 Cart) by EIS × OPUS/OMNIA Partners — an agentic commerce system for procurement that autonomously converts RFQs into optimized purchase orders. Built on EIS's VIA platform (data ingestion, schema governance, taxonomy optimization, content enrichment, compliance checks, search tuning), R2C acts on behalf of procurement officers to parse documents, match products against 7.5M+ enriched catalog items across 630+ cooperative suppliers, enforce cooperative contract compliance, optimize costs through intelligent swap recommendations, manage stock risks, and advance sustainability goals. VIA is the enrichment layer that prepares the data — R2C works without it, but performs dramatically better with VIA-enriched data.
 
 # User Preferences
 
@@ -8,13 +8,15 @@ Preferred communication style: Simple, everyday language.
 
 # System Architecture
 
-## EIS Data Foundation Layer
+## EIS VIA Platform (Data Foundation Layer)
 
-R2C is powered by EIS's data foundation work for OMNIA's OPUS platform:
-- **Schema Detection & Attribute Mapping**: Unified product model from 630+ supplier feeds using industry standards (Schema.org, GS1, eCl@ss)
+R2C is powered by EIS's VIA platform — the data processing and enrichment technology for OMNIA's OPUS platform. VIA ingests all types of documents and data feeds, enriches them, and prepares the data that makes R2C's intelligent matching possible:
+- **Document Ingestion Pipeline**: Ingests any format (JSON, XML, flat files, PDFs, spreadsheets, spec sheets, compliance certificates) from 630+ supplier feeds; multi-source reconciliation; continuous pipeline for feed updates and new supplier onboarding
+- **Schema Detection & Attribute Mapping**: Unified product model using industry standards (Schema.org, GS1, eCl@ss)
 - **Taxonomy Optimization**: UNSPSC classification, category path hierarchy, variant product modeling
 - **Content Enrichment**: Title/description normalization, missing attribute fill, keyword/synonym generation
 - **Search Enhancement**: Elastic config tuning, field weighting, synonym enrichment, faceting optimization
+- **Compliance Checks**: Automated contract verification, policy rule enforcement (budget limits, sustainability mandates, approved vendor lists), regulatory compliance flagging, audit trail generation
 - **Sustainability Data**: CO₂ per unit, recycled content, certification capture (Green Seal, EPA Safer Choice, etc.)
 
 ## Frontend Architecture
@@ -126,7 +128,7 @@ R2C is powered by EIS's data foundation work for OMNIA's OPUS platform:
 - `server/file-parser.ts` — CSV/Excel parsing and product matching
 - `server/storage.ts` — Database storage abstraction
 - `shared/schema.ts` — Drizzle schema with enriched taxonomy fields and Zod types
-- `docs/PRD.md` — Product Requirements Document with EIS data foundation narrative
+- `docs/PRD.md` — Product Requirements Document with EIS VIA platform narrative
 
 ## External Dependencies
 
@@ -152,8 +154,9 @@ R2C is powered by EIS's data foundation work for OMNIA's OPUS platform:
 
 # Recent Changes
 
-**February 2026 - EIS Data Foundation & Multi-Dimensional Value**
-- Added EIS data foundation narrative to PRD documenting schema governance, taxonomy optimization, content enrichment, and search tuning as the foundation enabling R2C
+**February 2026 - EIS VIA Platform & Multi-Dimensional Value**
+- Added EIS VIA platform narrative to PRD documenting document ingestion pipeline, schema governance, taxonomy optimization, content enrichment, compliance checks, and search tuning as the foundation enabling R2C
+- VIA branded as EIS's proprietary data processing and enrichment technology; R2C works without it but performs dramatically better with VIA-enriched data
 - Enhanced product schema with enriched taxonomy fields: UNSPSC codes, categoryPath hierarchy, brand, MPN, packSize, certifications, contractTier, preferredSupplier, co2PerUnit, recycledContent
 - Expanded seed catalog to 50 products across 6 categories using real OPUS cooperative suppliers (Grainger, ODP Business Solutions, Quill, Global Industrial, MSC Industrial, Medline, Lawson Products, Network Distribution, Safeware)
 - Built BM25-style matching engine (server/matching.ts) with TF-IDF scoring, trigram fuzzy matching, and synonym expansion for procurement terms

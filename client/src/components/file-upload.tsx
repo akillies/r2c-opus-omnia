@@ -240,7 +240,7 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
               <p className="text-[10px] sm:text-xs text-blue-700 mt-1.5">
                 {uploadProgress < 40 ? 'Parsing file structure and format' :
                  uploadProgress < 70 ? 'Intelligently detecting product names, quantities, and units' :
-                 'Cross-referencing against 7.5M+ enriched catalog items across 630+ cooperative suppliers'}
+                 'Cross-referencing against 7.5M+ VIA-enriched catalog items across 630+ cooperative suppliers'}
               </p>
             </div>
           ) : (

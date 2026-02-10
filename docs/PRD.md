@@ -23,13 +23,19 @@ Every day, procurement teams at schools, hospitals, municipalities, and corporat
 
 ---
 
-## The Data Foundation: EIS Enterprise Content Services
+## The Data Foundation: EIS VIA
 
-R2C does not exist in a vacuum. It is the **agentic commerce layer** that sits atop a rigorous data foundation built by **EIS (Enterprise Information Solutions)**. Before a single RFQ can be processed intelligently, the underlying catalog data must be clean, governed, enriched, and optimized for discovery. This is the work that precedes R2C and makes it possible.
+R2C does not exist in a vacuum. It is the **agentic commerce layer** that sits atop a rigorous data foundation built by **EIS (Enterprise Information Solutions)** using their proprietary technology platform called **VIA**. Before a single RFQ can be processed intelligently, the underlying catalog data must be clean, governed, enriched, and optimized for discovery. VIA is the enrichment layer that prepares all of this — and while R2C would function at a basic level without it, VIA-enriched data is what elevates R2C from a simple matching tool to a truly intelligent procurement agent.
 
-### What EIS Built for OMNIA's OPUS Platform
+### What VIA Does
 
-EIS transformed raw, heterogeneous supplier data — JSON feeds, ElasticSearch indices, flat-file catalogs from 630+ cooperative suppliers — into a **well-governed relational schema** designed for analytics, PIM-like workflows, search, and ERP integration. This foundational work includes:
+VIA is EIS's data processing and enrichment platform. It ingests all types of documents and data feeds — JSON, XML, flat files, ElasticSearch indices, PDFs, spreadsheets, and unstructured content from 630+ cooperative suppliers — and transforms them into a **well-governed relational schema** designed for analytics, PIM-like workflows, search, and ERP integration.
+
+**Document Ingestion Pipeline**
+- Ingests any document format: supplier catalogs, product spec sheets, compliance certificates, pricing schedules, RFQ documents, contract terms
+- Intelligent extraction of structured data from unstructured sources (PDFs, scanned documents, spreadsheets with inconsistent formatting)
+- Multi-source reconciliation: merges data from multiple feeds for the same products to create a single enriched record
+- Continuous pipeline: handles ongoing feed updates, new supplier onboarding, and catalog refresh cycles
 
 **Schema Detection & Attribute Mapping**
 - Automated detection of incoming data schemas from hundreds of supplier feeds
@@ -59,21 +65,29 @@ EIS transformed raw, heterogeneous supplier data — JSON feeds, ElasticSearch i
 - Contract tier classification and preferred supplier designation
 - Cooperative master agreement mapping (OMNIA R-XXXXX format)
 
-### How EIS Enables R2C
+**Compliance Checks**
+- Automated verification that products meet cooperative contract requirements
+- Policy rule enforcement: budget limits, sustainability mandates, minority supplier requirements, approved vendor lists
+- Contract validation against OMNIA cooperative master agreements (ensuring products are on awarded contracts)
+- Regulatory compliance flagging: certifications required for specific use cases (healthcare, food service, education)
+- Audit trail generation documenting compliance status for every matched and recommended product
 
-Every capability of R2C is powered by this enriched data layer:
+### How VIA Enables R2C
 
-| R2C Capability | EIS Data Foundation |
+Every capability of R2C is powered by VIA's enriched data layer:
+
+| R2C Capability | VIA Foundation |
 |---|---|
-| BM25 product matching with synonym expansion | Enriched keywords, synonym dictionaries, normalized attributes |
+| BM25 product matching with synonym expansion | VIA-enriched keywords, synonym dictionaries, normalized attributes |
 | UNSPSC-aware category matching | Taxonomy optimization, category path hierarchy |
-| Contract compliance enforcement | Master agreement mapping, contract tier classification |
+| Contract compliance enforcement | Master agreement mapping, contract tier classification, compliance checks |
 | Eco-friendly swap recommendations | CO₂ data, certifications, recycled content enrichment |
 | Supplier consolidation analysis | Normalized supplier identities, preferred supplier flags |
 | Pack size optimization | Variant modeling, attribute inheritance, pack size normalization |
 | Confidence scoring | Clean, governed attributes enabling precise text matching |
+| Document understanding | VIA document ingestion pipeline for any format |
 
-**R2C is the peak of EIS's data strategy** — the point where governed, enriched, high-quality catalog data translates directly into autonomous procurement value. Without the foundation, the agent would be matching against noisy, inconsistent data and producing unreliable results.
+**R2C is the peak of EIS's data strategy** — the point where VIA-governed, enriched, high-quality catalog data translates directly into autonomous procurement value. Without VIA, R2C would still function — matching products and generating orders — but with VIA enrichment, the matching is more precise, the swap recommendations are smarter, compliance is enforced automatically, and the value delivered is dramatically higher.
 
 ---
 
@@ -101,7 +115,7 @@ The result: procurement teams process RFQs **10x faster**, save **15-25% on aver
 The procurement industry is undergoing a fundamental transformation. Four forces are converging:
 
 ### 1. Data Foundations Are Ready
-Through EIS's work on schema governance, taxonomy optimization, and content enrichment, OMNIA's catalog data is now clean, structured, and enriched enough to power autonomous matching and optimization. This is the prerequisite that was missing — you can't build intelligent procurement on dirty data.
+Through EIS's VIA platform — powering schema governance, taxonomy optimization, document ingestion, content enrichment, and compliance checks — OMNIA's catalog data is now clean, structured, and enriched enough to power autonomous matching and optimization. This is the prerequisite that was missing — you can't build intelligent procurement on dirty data.
 
 ### 2. AI Agents Are Ready
 Intelligent automation has reached the point where it can reliably parse unstructured documents, match entities across databases, and make optimization decisions. Combined with enriched, governed data, the technology is production-ready.
@@ -167,7 +181,7 @@ Organizations like OMNIA Partners aggregate buying power across thousands of mem
 
 **Intelligence applied:**
 - BM25-style matching with TF-IDF scoring, trigram fuzzy matching, and synonym expansion
-- UNSPSC-aware category matching using EIS-enriched taxonomy hierarchy
+- UNSPSC-aware category matching using VIA-enriched taxonomy hierarchy
 - Contract-first matching: prioritizes products on OMNIA cooperative master agreements
 - Multi-signal ranking: price, availability, supplier reliability, contract tier, preferred supplier status
 - Flags items that can't be matched above a confidence threshold for human review
@@ -178,7 +192,7 @@ Organizations like OMNIA Partners aggregate buying power across thousands of mem
 - "3 items need your review — similar products found but names differ"
 - "Estimated order value: $12,450 based on current cooperative pricing"
 
-**Why this matters:** Manual catalog searching averages 3-5 minutes per item. For a 50-item RFQ, that's 2.5-4 hours. The agent, powered by EIS-enriched catalog data, matches everything in under 10 seconds and catches contract compliance issues immediately.
+**Why this matters:** Manual catalog searching averages 3-5 minutes per item. For a 50-item RFQ, that's 2.5-4 hours. The agent, powered by VIA-enriched catalog data, matches everything in under 10 seconds and catches contract compliance issues immediately.
 
 ---
 
@@ -322,7 +336,7 @@ R2C is designed to run anywhere:
 ## Roadmap
 
 ### Phase 1: Intelligent Matching (Current)
-- EIS-enriched catalog with UNSPSC taxonomy, brand/MPN, certifications, CO₂ data
+- VIA-enriched catalog with UNSPSC taxonomy, brand/MPN, certifications, CO₂ data
 - BM25 product matching with TF-IDF scoring, trigram fuzzy matching, synonym expansion
 - RFQ upload and parsing (CSV, Excel) with intelligent column detection
 - Swap recommendations using enriched attributes (pack size, certifications, CO₂, contract tiers)
@@ -332,7 +346,7 @@ R2C is designed to run anywhere:
 
 ### Phase 2: Deep Intelligence
 - Natural language RFQ processing ("I need 200 boxes of cleaning supplies for 3 buildings")
-- RAG-driven product-level insights powered by EIS content enrichment
+- RAG-driven product-level insights powered by VIA content enrichment
 - Historical purchase pattern analysis
 - Predictive reorder recommendations
 - Multi-contract optimization across OMNIA cooperative agreements
@@ -348,10 +362,10 @@ R2C is designed to run anywhere:
 ### Phase 4: Network Intelligence
 - Cross-organization benchmarking ("You're paying 20% more than similar districts")
 - Demand aggregation across cooperative members
-- Supplier negotiation insights powered by EIS analytics
+- Supplier negotiation insights powered by VIA analytics
 - Market trend analysis and forward buying recommendations
-- Content-aware enrichment feedback loop: R2C usage data → EIS governance improvements
+- Content-aware enrichment feedback loop: R2C usage data → VIA governance improvements
 
 ---
 
-*R2C by EIS × OPUS (OMNIA Partners) — Governed data meets agentic commerce. The future of procurement is autonomous.*
+*R2C by EIS × OPUS (OMNIA Partners) — VIA-governed data meets agentic commerce. The future of procurement is autonomous.*

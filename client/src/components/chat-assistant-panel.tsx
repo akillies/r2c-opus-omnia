@@ -359,7 +359,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 </div>
               </div>
               <div className="text-[11px] text-gray-500 text-center italic">
-                All items matched via enriched catalog data and verified against publicly awarded cooperative contracts
+                All items matched via VIA-enriched catalog data and verified against publicly awarded cooperative contracts
               </div>
             </div>
             <div className="flex gap-3">
