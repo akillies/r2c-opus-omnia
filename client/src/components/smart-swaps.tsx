@@ -64,12 +64,18 @@ export default function SmartSwaps({
   const acceptedCount = swaps.filter(s => s.isAccepted).length;
   const stockRiskCount = swaps.filter(s => s.swapType === 'stock').length;
   const ecoCount = swaps.filter(s => s.swapType === 'sustainability').length;
+  const bulkCount = swaps.filter(s => s.swapType === 'pack_size').length;
+  const supplierCount = swaps.filter(s => s.swapType === 'supplier').length;
 
   return (
     <div className="space-y-3">
       <div>
         <h3 className="font-bold text-gray-900 mb-0.5 text-sm sm:text-base">Optimize Your Order</h3>
-        <p className="text-[10px] sm:text-xs text-gray-500">{swaps.length} optimization opportunities found by the agent</p>
+        <p className="text-[10px] sm:text-xs text-gray-500">
+          {swaps.length > 0 
+            ? `${swaps.length} optimization ${swaps.length === 1 ? 'opportunity' : 'opportunities'} identified by the agent`
+            : 'Analyzing your order against VIA-enriched catalog data...'}
+        </p>
       </div>
 
       <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-lg p-2.5">
@@ -81,19 +87,31 @@ export default function SmartSwaps({
           {potentialSavings > 0 && (
             <div className="flex items-center gap-1.5">
               <DollarSign className="w-3 h-3 text-green-500 shrink-0" />
-              <span>Found <strong>${potentialSavings.toFixed(2)}</strong> in potential savings across {swaps.length} items</span>
+              <span>Identified <strong>${potentialSavings.toFixed(2)}</strong> in potential savings across {swaps.length} optimization{swaps.length > 1 ? 's' : ''}</span>
             </div>
           )}
           {stockRiskCount > 0 && (
             <div className="flex items-center gap-1.5">
               <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
-              <span>{stockRiskCount} stock risk{stockRiskCount > 1 ? 's' : ''} detected — alternatives available to avoid backorders</span>
+              <span><strong>{stockRiskCount}</strong> stock risk{stockRiskCount > 1 ? 's' : ''} detected — VIA found available alternatives to avoid backorders</span>
+            </div>
+          )}
+          {bulkCount > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Box className="w-3 h-3 text-blue-500 shrink-0" />
+              <span><strong>{bulkCount}</strong> bulk format{bulkCount > 1 ? 's' : ''} available with lower per-unit cost</span>
+            </div>
+          )}
+          {supplierCount > 0 && (
+            <div className="flex items-center gap-1.5">
+              <DollarSign className="w-3 h-3 text-indigo-500 shrink-0" />
+              <span><strong>{supplierCount}</strong> competitive alternative{supplierCount > 1 ? 's' : ''} from cooperative suppliers at better pricing</span>
             </div>
           )}
           {ecoCount > 0 && (
             <div className="flex items-center gap-1.5">
               <Leaf className="w-3 h-3 text-green-500 shrink-0" />
-              <span>{ecoCount} eco-friendly alternative{ecoCount > 1 ? 's' : ''} align with sustainability policy</span>
+              <span><strong>{ecoCount}</strong> certified sustainable alternative{ecoCount > 1 ? 's' : ''} — aligned with Green Purchasing Policy</span>
             </div>
           )}
         </div>
@@ -151,7 +169,7 @@ export default function SmartSwaps({
                     ) : null}
                   </div>
 
-                  <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">{swap.reason}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-2 leading-relaxed">{swap.reason}</p>
 
                   <div className="flex items-center gap-2 sm:gap-3 mt-1 text-[10px] sm:text-xs">
                     <span className="text-gray-500 line-through">

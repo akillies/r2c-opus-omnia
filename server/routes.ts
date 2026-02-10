@@ -83,16 +83,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else {
         const sampleItems = [
-          { productId: "prod-01", quantity: 12, unitPrice: "18.50", confidence: "0.98" },
-          { productId: "prod-04", quantity: 48, unitPrice: "18.75", confidence: "0.93" },
-          { productId: "prod-05", quantity: 72, unitPrice: "4.25", confidence: "0.97" },
-          { productId: "prod-07", quantity: 24, unitPrice: "8.50", confidence: "0.92" },
+          { productId: "prod-07", quantity: 24, unitPrice: "8.50", confidence: "0.96" },
+          { productId: "prod-46", quantity: 30, unitPrice: "18.99", confidence: "0.97" },
+          { productId: "prod-39", quantity: 20, unitPrice: "16.99", confidence: "0.95" },
+          { productId: "prod-11", quantity: 15, unitPrice: "42.99", confidence: "0.98" },
           { productId: "prod-09", quantity: 10, unitPrice: "45.00", confidence: "0.99" },
-          { productId: "prod-13", quantity: 50, unitPrice: "42.00", confidence: "0.96" },
-          { productId: "prod-24", quantity: 30, unitPrice: "11.50", confidence: "0.91" },
-          { productId: "prod-26", quantity: 20, unitPrice: "18.99", confidence: "0.95" },
-          { productId: "prod-33", quantity: 40, unitPrice: "58.00", confidence: "0.94" },
-          { productId: "prod-46", quantity: 24, unitPrice: "62.50", confidence: "0.97" },
+          { productId: "prod-21", quantity: 50, unitPrice: "14.99", confidence: "0.98" },
+          { productId: "prod-27", quantity: 15, unitPrice: "18.99", confidence: "0.94" },
+          { productId: "prod-32", quantity: 8, unitPrice: "64.99", confidence: "0.93" },
+          { productId: "prod-35", quantity: 6, unitPrice: "42.50", confidence: "0.92" },
+          { productId: "prod-01", quantity: 12, unitPrice: "18.50", confidence: "0.94" },
         ];
 
         for (const item of sampleItems) {
@@ -221,7 +221,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const currentPrice = parseFloat(currentProduct.unitPrice);
       const currentName = currentProduct.name.toLowerCase();
-      const keywords = currentName.split(/[\s\-()]+/).filter((w: string) => w.length > 3);
+      const nonDistinctive = new Set([
+        "heavy", "duty", "industrial", "eco", "economy", "premium", "white", "black",
+        "blue", "red", "green", "yellow", "clear", "medium", "large", "small", "standard",
+        "professional", "commercial", "general", "purpose", "multi", "grade", "type",
+        "class", "pro", "plus", "max", "lite", "basic", "value", "pack", "case",
+        "box", "each", "per", "roll", "sheet", "count", "powder", "free", "disposable",
+      ]);
+      const keywords = currentName.split(/[\s\-()\/]+/)
+        .filter((w: string) => w.length > 2 && !nonDistinctive.has(w));
       const currentCategory = currentProduct.category || '';
       const currentUnspsc = currentProduct.unspsc || '';
 
@@ -229,10 +237,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .filter((p: any) => {
           if (p.id === item.productId || usedAlternatives.has(p.id)) return false;
           const altName = p.name.toLowerCase();
-          const nameMatch = keywords.some((kw: string) => altName.includes(kw));
-          const categoryMatch = p.category === currentCategory;
-          const unspscMatch = currentUnspsc && p.unspsc && p.unspsc.substring(0, 4) === currentUnspsc.substring(0, 4);
-          return nameMatch || categoryMatch || unspscMatch;
+          
+          const unspscMatch = currentUnspsc && p.unspsc && 
+            currentUnspsc.length >= 8 && p.unspsc.length >= 8 &&
+            p.unspsc.substring(0, 8) === currentUnspsc.substring(0, 8);
+          
+          const matchingKeywords = keywords.filter((kw: string) => altName.includes(kw));
+          const strongNameMatch = matchingKeywords.length >= 2 && p.category === currentCategory;
+          
+          return unspscMatch || strongNameMatch;
         })
         .map((alt: any) => {
           const altPrice = parseFloat(alt.unitPrice);
@@ -241,33 +254,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let swapType = 'supplier';
           let reason = '';
 
-          if (currentProduct.availability === 'Low Stock' && alt.availability === 'In Stock' && altPrice <= currentPrice * 1.05) {
+          if (currentProduct.availability === 'Low Stock' && alt.availability === 'In Stock' && altPrice <= currentPrice * 1.15) {
             swapType = 'stock';
-            reason = `Stock risk avoided — ${currentProduct.name} is low stock, this equivalent from ${alt.supplier} ships immediately`;
+            const savingsNote = altPrice < currentPrice 
+              ? ` and saves $${(savings).toFixed(2)} on this line`
+              : altPrice > currentPrice 
+              ? ` at only $${(altPrice - currentPrice).toFixed(2)}/unit premium`
+              : '';
+            reason = `Stock risk mitigated — ${currentProduct.name} shows limited availability. VIA detected ${alt.supplier} carries equivalent ${alt.name} with immediate fulfillment${savingsNote}`;
             priority = 100;
           } else if (alt.packSize && currentProduct.packSize && alt.packSize > currentProduct.packSize && altPrice / alt.packSize < currentPrice / currentProduct.packSize) {
             swapType = 'pack_size';
             const perUnitCurrent = currentPrice / currentProduct.packSize;
             const perUnitAlt = altPrice / alt.packSize;
             const perUnitSavings = ((perUnitCurrent - perUnitAlt) / perUnitCurrent * 100).toFixed(0);
-            reason = `Bulk savings — ${alt.packSize}-ct format is ${perUnitSavings}% cheaper per unit than ${currentProduct.packSize}-ct`;
+            const totalSavings = (perUnitCurrent - perUnitAlt) * alt.packSize * item.quantity;
+            reason = `Bulk optimization — VIA identified ${alt.packSize}-ct format from ${alt.supplier} is ${perUnitSavings}% cheaper per unit vs current ${currentProduct.packSize}-ct ($${perUnitAlt.toFixed(3)}/ea vs $${perUnitCurrent.toFixed(3)}/ea). Projected savings: $${totalSavings.toFixed(2)}`;
             priority = 80;
-          } else if (alt.isEco && !currentProduct.isEco && altPrice <= currentPrice * 1.1) {
+          } else if (alt.isEco && !currentProduct.isEco && altPrice <= currentPrice * 1.20) {
             swapType = 'sustainability';
             const certList = alt.certifications?.length ? alt.certifications.join(', ') : 'eco-certified';
             const co2Savings = (currentProduct.co2PerUnit && alt.co2PerUnit && alt.co2PerUnit < currentProduct.co2PerUnit)
-              ? ` — ${((1 - alt.co2PerUnit / currentProduct.co2PerUnit) * 100).toFixed(0)}% lower carbon footprint`
+              ? ` | ${((1 - alt.co2PerUnit / currentProduct.co2PerUnit) * 100).toFixed(0)}% lower carbon footprint (${alt.co2PerUnit} vs ${currentProduct.co2PerUnit} kg CO₂/unit)`
               : '';
+            const recycledNote = alt.recycledContent > 0 ? ` | ${alt.recycledContent}% recycled content` : '';
             if (altPrice <= currentPrice) {
-              reason = `${certList} alternative at same or lower price${co2Savings} — meets Green Purchasing Policy`;
+              reason = `Green swap at equal or lower cost — ${certList} certified${co2Savings}${recycledNote}. Meets Green Purchasing Policy with no budget impact`;
             } else {
-              reason = `${certList} option at only $${(altPrice - currentPrice).toFixed(2)}/unit more${co2Savings} — aligns with sustainability mandate`;
+              const premium = ((altPrice - currentPrice) / currentPrice * 100).toFixed(1);
+              reason = `Sustainability upgrade — ${certList} certified at ${premium}% premium ($${(altPrice - currentPrice).toFixed(2)}/unit)${co2Savings}${recycledNote}. Advances sustainability mandate`;
             }
             priority = 60;
           } else if (savings > 0 && alt.supplier !== currentProduct.supplier) {
             swapType = 'supplier';
-            const tierNote = alt.contractTier === 'Tier 1' ? ' (Tier 1 cooperative supplier)' : '';
-            reason = `Better price from ${alt.supplier}${tierNote} — saves $${savings.toFixed(2)} on this line (${((savings / (currentPrice * item.quantity)) * 100).toFixed(0)}% reduction)`;
+            const tierNote = alt.contractTier === 'Tier 1' ? ` under ${alt.contract || 'cooperative master agreement'} (Tier 1)` : '';
+            const pctSavings = ((savings / (currentPrice * item.quantity)) * 100).toFixed(0);
+            reason = `VIA price analysis — ${alt.supplier}${tierNote} offers ${alt.name} at $${altPrice.toFixed(2)}/unit vs $${currentPrice.toFixed(2)}/unit. Line savings: $${savings.toFixed(2)} (${pctSavings}% reduction across ${item.quantity} units)`;
             priority = 70;
           } else if (alt.supplier !== currentProduct.supplier && altPrice < currentPrice) {
             swapType = 'supplier';

@@ -107,19 +107,20 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
 
   const handleDemoUpload = () => {
     setUploadSuccess(true);
-    setUploadedFileName("school-supplies-rfq-2024.xlsx");
+    setUploadedFileName("K12-District-Annual-Supply-RFQ-2026.xlsx");
     
+    let step = 0;
+    const steps = [15, 30, 45, 60, 75, 90, 100];
     const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setParsedItemCount(5);
-          onUpload("school-supplies-rfq-2024.xlsx");
-          return 100;
-        }
-        return prev + 15;
-      });
-    }, 200);
+      if (step >= steps.length) {
+        clearInterval(interval);
+        setParsedItemCount(10);
+        onUpload("K12-District-Annual-Supply-RFQ-2026.xlsx");
+        return;
+      }
+      setUploadProgress(steps[step]);
+      step++;
+    }, 350);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -203,7 +204,7 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
             data-testid="button-demo-upload"
           >
             <FileSpreadsheet className="w-4 h-4 mr-2" />
-            Use Demo File (school-supplies-rfq.xlsx)
+            Try Demo: K-12 District Annual Supply Order
           </Button>
         </div>
       ) : (
