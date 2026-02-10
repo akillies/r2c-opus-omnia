@@ -177,7 +177,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 <div className="font-semibold text-sm leading-tight">R2C Agent</div>
                 <div className="text-[10px] text-blue-200 flex items-center gap-1">
                   <Sparkles className="w-2.5 h-2.5" />
-                  Agentic Procurement
+                  Powered by VIA
                 </div>
               </div>
             )}
@@ -244,7 +244,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 <div className="space-y-3">
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
                     <p className="text-xs sm:text-sm text-blue-800">
-                      <strong>Your AI procurement agent is ready.</strong> Upload an RFQ and I'll match products across 630+ cooperative suppliers, enforce contract compliance, find savings, and prepare your optimized PO.
+                      <strong>Your AI procurement agent is ready.</strong> Upload an RFQ and I'll match products against VIA-enriched data from 630+ cooperative suppliers, enforce contract compliance, find savings, and prepare your optimized PO.
                     </p>
                     <div className="flex items-center gap-3 mt-2 text-[10px] text-blue-600 flex-wrap">
                       <span className="flex items-center gap-1"><TrendingDown className="w-3 h-3" /> Avg 18% savings</span>
@@ -334,7 +334,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
           </DialogHeader>
           <div className="space-y-4" id="success-dialog-description">
             <p className="text-gray-600">
-              Your purchase order has been optimized against OMNIA Partners cooperative master agreements and submitted.
+              Your purchase order has been optimized using VIA-enriched data against OMNIA Partners cooperative master agreements and submitted.
             </p>
             <div className="bg-gray-50 p-4 rounded-lg space-y-3">
               <div>
@@ -359,7 +359,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 </div>
               </div>
               <div className="text-[11px] text-gray-500 text-center italic">
-                All items matched via VIA-enriched catalog data and verified against publicly awarded cooperative contracts
+                All items matched against VIA-enriched catalog data and verified against publicly awarded cooperative contracts
               </div>
             </div>
             <div className="flex gap-3">

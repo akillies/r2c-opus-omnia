@@ -261,7 +261,7 @@ export default function OpusStorefront({ cartItemCount, onOpenAssistant, highlig
                     <h2 className="text-base sm:text-lg lg:text-xl font-bold">Requirements 2 Cart</h2>
                   </div>
                   <p className="text-blue-100 text-xs sm:text-sm mb-2.5 sm:mb-3 max-w-md">
-                    Upload your RFQ and let AI match products across cooperative master agreements, find savings, and ensure compliance automatically.
+                    Upload your RFQ and let AI match products using VIA-enriched data across cooperative master agreements, find savings, and ensure compliance automatically.
                   </p>
                   <div className="flex items-center gap-2 sm:gap-3 mb-3">
                     <div className="flex items-center gap-1 text-[10px] sm:text-xs text-blue-200">

@@ -61,12 +61,12 @@ export default function ProductMatching({ items, onBack, onNext, elapsedTime }: 
       <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-lg p-2.5">
         <div className="flex items-center gap-1.5 mb-1.5">
           <Zap className="w-3.5 h-3.5 text-emerald-600" />
-          <span className="text-xs font-semibold text-emerald-800">Agent Actions</span>
+          <span className="text-xs font-semibold text-emerald-800">Agent Actions <span className="font-normal text-emerald-600">· VIA-powered</span></span>
         </div>
         <div className="space-y-1 text-[10px] sm:text-[11px] text-gray-700">
           <div className="flex items-center gap-1.5">
             <CheckCircle className="w-3 h-3 text-green-500 shrink-0" />
-            <span>Matched {highConfCount}/{items.length} items with 95%+ confidence</span>
+            <span>Matched {highConfCount}/{items.length} items with 95%+ confidence using VIA-enriched data</span>
           </div>
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-3 h-3 text-purple-500 shrink-0" />

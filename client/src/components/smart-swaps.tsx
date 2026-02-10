@@ -75,7 +75,7 @@ export default function SmartSwaps({
       <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-lg p-2.5">
         <div className="flex items-center gap-1.5 mb-1.5">
           <Zap className="w-3.5 h-3.5 text-emerald-600" />
-          <span className="text-xs font-semibold text-emerald-800">Agent Intelligence</span>
+          <span className="text-xs font-semibold text-emerald-800">Agent Intelligence <span className="font-normal text-emerald-600">· VIA-powered</span></span>
         </div>
         <div className="space-y-1 text-[10px] sm:text-[11px] text-gray-700">
           {potentialSavings > 0 && (
