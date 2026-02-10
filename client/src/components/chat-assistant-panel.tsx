@@ -22,6 +22,19 @@ interface ChatAssistantPanelProps {
   onToggleExpand?: () => void;
 }
 
+interface MatchDetails {
+  exactTerms: string[];
+  fuzzyTerms: string[];
+  synonymTerms: string[];
+  categoryBoost: boolean;
+}
+
+interface MatchedItemMeta {
+  productId: string;
+  requestedName: string;
+  matchDetails: MatchDetails;
+}
+
 interface OrderData {
   order: any;
   items: any[];
@@ -38,6 +51,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
   const [orderNumber, setOrderNumber] = useState("");
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [matchMeta, setMatchMeta] = useState<MatchedItemMeta[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -58,6 +72,18 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
 
   const createOrderMutation = useMutation({
     mutationFn: async ({ fileName, matchedItems }: { fileName: string; matchedItems?: any[] }) => {
+      if (matchedItems) {
+        const meta: MatchedItemMeta[] = matchedItems
+          .filter((m: any) => m.matchedProduct)
+          .map((m: any) => ({
+            productId: m.matchedProduct.id,
+            requestedName: m.requestedItem?.name || "",
+            matchDetails: m.matchDetails || { exactTerms: [], fuzzyTerms: [], synonymTerms: [], categoryBoost: false },
+          }));
+        setMatchMeta(meta);
+      } else {
+        setMatchMeta(getDemoMatchMeta());
+      }
       const response = await apiRequest("POST", "/api/orders", {
         fileName,
         matchedItems,
@@ -131,10 +157,26 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
     setOrderNumber("");
     setStartTime(null);
     setElapsedTime(0);
+    setMatchMeta([]);
     onCartUpdate(0);
     onHighlightProducts([]);
     queryClient.clear();
   };
+
+  function getDemoMatchMeta(): MatchedItemMeta[] {
+    return [
+      { productId: "prod-07", requestedName: "Cotton Mop Heads #24", matchDetails: { exactTerms: ["mop", "head", "cotton"], fuzzyTerms: ["mop≈mops"], synonymTerms: ["mopping", "floor mop"], categoryBoost: true } },
+      { productId: "prod-46", requestedName: "Hand Soap Foam Refill", matchDetails: { exactTerms: ["hand", "soap", "foam"], fuzzyTerms: [], synonymTerms: ["wash", "cleanser"], categoryBoost: true } },
+      { productId: "prod-39", requestedName: "LED Light Bulbs 60W", matchDetails: { exactTerms: ["led", "light", "bulb"], fuzzyTerms: ["bulb≈bulbs"], synonymTerms: ["lamp", "light bulb"], categoryBoost: true } },
+      { productId: "prod-11", requestedName: "Copy Paper 8.5x11", matchDetails: { exactTerms: ["copy", "paper", "8.5x11"], fuzzyTerms: [], synonymTerms: ["sheets", "ream"], categoryBoost: true } },
+      { productId: "prod-09", requestedName: "Trash Bags 55 Gallon", matchDetails: { exactTerms: ["trash", "55", "gallon"], fuzzyTerms: [], synonymTerms: ["garbage", "waste", "liner", "bag"], categoryBoost: true } },
+      { productId: "prod-21", requestedName: "Nitrile Gloves Medium", matchDetails: { exactTerms: ["nitrile", "gloves", "medium"], fuzzyTerms: [], synonymTerms: ["glove", "hand protection"], categoryBoost: true } },
+      { productId: "prod-27", requestedName: "Paper Towels C-Fold", matchDetails: { exactTerms: ["paper", "towel"], fuzzyTerms: ["towel≈towels"], synonymTerms: ["cloth", "wipe", "hand towel", "folded towel", "c-fold"], categoryBoost: true } },
+      { productId: "prod-32", requestedName: "First Aid Kit Workplace", matchDetails: { exactTerms: ["first", "aid", "kit"], fuzzyTerms: [], synonymTerms: ["medical", "emergency", "trauma"], categoryBoost: true } },
+      { productId: "prod-35", requestedName: "AA Batteries Bulk", matchDetails: { exactTerms: ["batteries"], fuzzyTerms: ["battery≈batteries"], synonymTerms: ["battery", "cells"], categoryBoost: true } },
+      { productId: "prod-01", requestedName: "Floor Cleaner Concentrate", matchDetails: { exactTerms: ["floor", "cleaner", "concentrate"], fuzzyTerms: [], synonymTerms: ["cleaning", "detergent", "solution"], categoryBoost: true } },
+    ];
+  }
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -289,6 +331,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
               {currentStep === 1 && orderData?.items && (
                 <ProductMatching
                   items={orderData.items}
+                  matchMeta={matchMeta}
                   onBack={() => setCurrentStep(0)}
                   onNext={() => { refetchOrder(); setCurrentStep(2); }}
                   elapsedTime={elapsedTime}

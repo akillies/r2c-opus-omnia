@@ -3,44 +3,63 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Search, Package, ShieldCheck, Zap, Clock, Truck, Leaf, Award, ChevronDown, ChevronUp, Info, Tag, MapPin } from "lucide-react";
+import {
+  CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Search, Package, ShieldCheck, Zap, Clock,
+  Truck, Leaf, Award, ChevronDown, ChevronUp, Info, Tag, MapPin, Layers, GitBranch,
+  Sparkles, Hash, TextSearch, BookOpen, ChevronRight
+} from "lucide-react";
 import type { Product } from "@shared/schema";
+
+interface MatchDetails {
+  exactTerms: string[];
+  fuzzyTerms: string[];
+  synonymTerms: string[];
+  categoryBoost: boolean;
+}
+
+interface MatchedItemMeta {
+  productId: string;
+  requestedName: string;
+  matchDetails: MatchDetails;
+}
 
 interface ProductMatchingProps {
   items: any[];
+  matchMeta?: MatchedItemMeta[];
   onBack: () => void;
   onNext: () => void;
   elapsedTime?: number;
 }
 
-function getShippingEstimate(product: Product) {
-  if (product.availability === "Out of Stock") return { text: "10-14 days", color: "text-red-600", bg: "bg-red-50" };
-  if (product.availability === "Low Stock") return { text: "5-7 days", color: "text-amber-600", bg: "bg-amber-50" };
-  if (product.preferredSupplier) return { text: "1-2 days", color: "text-green-600", bg: "bg-green-50" };
-  return { text: "2-4 days", color: "text-blue-600", bg: "bg-blue-50" };
+const UNSPSC_SEGMENTS: Record<string, string> = {
+  "44": "Office Equipment & Supplies",
+  "46": "Safety & Security Equipment",
+  "47": "Cleaning Equipment & Supplies",
+  "39": "Lighting & Electrical",
+  "42": "Medical Equipment & Supplies",
+  "26": "Power & Electrical",
+  "40": "HVAC, Plumbing & Facilities",
+  "52": "Domestic Appliances & Supplies",
+  "27": "Tools & General Machinery",
+  "31": "Manufacturing Components",
+};
+
+function getUnspscBreadcrumb(unspsc: string | null): string[] {
+  if (!unspsc || unspsc.length < 2) return [];
+  const crumbs: string[] = [];
+  const seg = unspsc.substring(0, 2);
+  crumbs.push(UNSPSC_SEGMENTS[seg] || `Segment ${seg}`);
+  if (unspsc.length >= 4) crumbs.push(`Family ${unspsc.substring(0, 4)}`);
+  if (unspsc.length >= 6) crumbs.push(`Class ${unspsc.substring(0, 6)}`);
+  if (unspsc.length >= 8) crumbs.push(`Commodity ${unspsc}`);
+  return crumbs;
 }
 
-function getMatchReasoning(product: Product, confidence: number): string[] {
-  const reasons: string[] = [];
-  const conf = Math.round(confidence * 100);
-
-  if (product.unspsc) {
-    reasons.push(`UNSPSC ${product.unspsc} verified against VIA taxonomy`);
-  }
-  if (product.contract) {
-    reasons.push(`Cooperative contract ${product.contract} (${product.contractTier || 'Active'})`);
-  }
-  if (conf >= 95) {
-    reasons.push(`${conf}% confidence — exact match on name, category, and specifications`);
-  } else if (conf >= 80) {
-    reasons.push(`${conf}% confidence — strong match on product attributes`);
-  } else {
-    reasons.push(`${conf}% confidence — partial match, review recommended`);
-  }
-  if (product.preferredSupplier) {
-    reasons.push(`Preferred supplier with priority fulfillment`);
-  }
-  return reasons;
+function getShippingEstimate(product: Product) {
+  if (product.availability === "Out of Stock") return { text: "10-14 days", color: "text-red-600", bg: "bg-red-50", label: "Backordered" };
+  if (product.availability === "Low Stock") return { text: "5-7 days", color: "text-amber-600", bg: "bg-amber-50", label: "Limited supply" };
+  if (product.preferredSupplier) return { text: "1-2 days", color: "text-green-600", bg: "bg-green-50", label: "Priority fulfillment" };
+  return { text: "2-4 days", color: "text-blue-600", bg: "bg-blue-50", label: "Standard shipping" };
 }
 
 function getCategoryShort(categoryPath: string | null): string {
@@ -49,7 +68,21 @@ function getCategoryShort(categoryPath: string | null): string {
   return parts.length > 1 ? parts.slice(1).join(" > ") : parts[0];
 }
 
-export default function ProductMatching({ items, onBack, onNext, elapsedTime }: ProductMatchingProps) {
+function getEnrichmentActions(product: Product, meta: MatchedItemMeta | undefined): string[] {
+  const actions: string[] = [];
+  if (product.unspsc) actions.push("UNSPSC classified");
+  if (product.categoryPath) actions.push("Taxonomy mapped");
+  if (product.brand) actions.push("Brand normalized");
+  if (product.certifications && product.certifications.length > 0) actions.push("Certifications captured");
+  if (product.co2PerUnit != null) actions.push("CO₂ footprint calculated");
+  if ((product.recycledContent ?? 0) > 0) actions.push("Sustainability scored");
+  if (meta?.matchDetails.synonymTerms.length) actions.push("Synonyms expanded");
+  if (product.contractTier) actions.push("Contract tier assigned");
+  if (product.mpn) actions.push("MPN indexed");
+  return actions;
+}
+
+export default function ProductMatching({ items, matchMeta, onBack, onNext, elapsedTime }: ProductMatchingProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
@@ -58,6 +91,7 @@ export default function ProductMatching({ items, onBack, onNext, elapsedTime }: 
   });
 
   const getProduct = (productId: string) => products?.find(p => p.id === productId);
+  const getMeta = (productId: string) => matchMeta?.find(m => m.productId === productId);
 
   const filteredItems = useMemo(() => {
     if (!searchQuery) return items;
@@ -74,19 +108,15 @@ export default function ProductMatching({ items, onBack, onNext, elapsedTime }: 
     const product = getProduct(item.productId);
     return product?.contract && product.contract.length > 0;
   });
-  const preferredCount = items.filter(item => {
-    const product = getProduct(item.productId);
-    return product?.preferredSupplier;
-  }).length;
-  const ecoCount = items.filter(item => {
-    const product = getProduct(item.productId);
-    return product?.isEco;
-  }).length;
+  const preferredCount = items.filter(item => getProduct(item.productId)?.preferredSupplier).length;
+  const ecoCount = items.filter(item => getProduct(item.productId)?.isEco).length;
   const certCount = items.filter(item => {
-    const product = getProduct(item.productId);
-    return product?.certifications && product.certifications.length > 0;
+    const p = getProduct(item.productId);
+    return p?.certifications && p.certifications.length > 0;
   }).length;
   const uniqueSuppliers = new Set(items.map(item => getProduct(item.productId)?.supplier).filter(Boolean)).size;
+  const synonymUsedCount = matchMeta?.filter(m => m.matchDetails.synonymTerms.length > 0).length || 0;
+  const fuzzyUsedCount = matchMeta?.filter(m => m.matchDetails.fuzzyTerms.length > 0).length || 0;
 
   const getConfidenceColor = (confidence: string) => {
     const conf = parseFloat(confidence);
@@ -108,7 +138,7 @@ export default function ProductMatching({ items, onBack, onNext, elapsedTime }: 
             <span className="text-[10px] sm:text-xs font-bold text-blue-900">{(avgConfidence * 100).toFixed(0)}%</span>
           </div>
         </div>
-        <p className="text-[10px] sm:text-xs text-gray-500">{items.length} items matched from your RFQ — tap any row for details</p>
+        <p className="text-[10px] sm:text-xs text-gray-500">{items.length} items matched from your RFQ — tap any row for enrichment details</p>
       </div>
 
       <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-lg p-2.5">
@@ -119,7 +149,7 @@ export default function ProductMatching({ items, onBack, onNext, elapsedTime }: 
         <div className="space-y-1.5 text-[10px] sm:text-[11px] text-gray-700">
           <div className="flex items-start gap-1.5">
             <CheckCircle className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
-            <span><strong className="text-green-700">{highConfCount}/{items.length}</strong> items matched at 95%+ confidence using VIA-enriched product taxonomy and UNSPSC classification</span>
+            <span><strong className="text-green-700">{highConfCount}/{items.length}</strong> items matched at 95%+ confidence via BM25 scoring with TF-IDF term weighting against VIA-enriched taxonomy</span>
           </div>
           <div className="flex items-start gap-1.5">
             <ShieldCheck className="w-3 h-3 text-purple-500 shrink-0 mt-0.5" />
@@ -130,24 +160,36 @@ export default function ProductMatching({ items, onBack, onNext, elapsedTime }: 
           </div>
           <div className="flex items-start gap-1.5">
             <Truck className="w-3 h-3 text-blue-500 shrink-0 mt-0.5" />
-            <span><strong className="text-blue-700">{preferredCount} preferred supplier{preferredCount !== 1 ? 's' : ''}</strong> with priority fulfillment (1-2 day shipping) across {uniqueSuppliers} total suppliers</span>
+            <span><strong className="text-blue-700">{preferredCount} preferred</strong> with 1-2 day priority fulfillment across {uniqueSuppliers} cooperative suppliers</span>
           </div>
+          {synonymUsedCount > 0 && (
+            <div className="flex items-start gap-1.5">
+              <BookOpen className="w-3 h-3 text-teal-500 shrink-0 mt-0.5" />
+              <span><strong className="text-teal-700">{synonymUsedCount} synonym expansion{synonymUsedCount > 1 ? 's' : ''}</strong> used — VIA's procurement lexicon expanded search terms to find best matches</span>
+            </div>
+          )}
+          {fuzzyUsedCount > 0 && (
+            <div className="flex items-start gap-1.5">
+              <TextSearch className="w-3 h-3 text-orange-500 shrink-0 mt-0.5" />
+              <span><strong className="text-orange-700">{fuzzyUsedCount} fuzzy match{fuzzyUsedCount > 1 ? 'es' : ''}</strong> — trigram similarity corrected minor spelling variations in your RFQ</span>
+            </div>
+          )}
           {certCount > 0 && (
             <div className="flex items-start gap-1.5">
               <Award className="w-3 h-3 text-indigo-500 shrink-0 mt-0.5" />
-              <span><strong className="text-indigo-700">{certCount} certified product{certCount !== 1 ? 's' : ''}</strong> — ANSI, FDA, EPA, FSC, and industry-standard compliance validated</span>
+              <span><strong className="text-indigo-700">{certCount} certified</strong> — ANSI, FDA, EPA, FSC, and industry compliance validated</span>
             </div>
           )}
           {ecoCount > 0 && (
             <div className="flex items-start gap-1.5">
               <Leaf className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
-              <span><strong className="text-green-700">{ecoCount} eco-certified</strong> — Green Seal, EPA Safer Choice, and sustainability-labeled products identified</span>
+              <span><strong className="text-green-700">{ecoCount} eco-certified</strong> — Green Seal, EPA Safer Choice, sustainability-labeled</span>
             </div>
           )}
           {elapsedTime != null && elapsedTime > 0 && (
             <div className="flex items-start gap-1.5">
               <Clock className="w-3 h-3 text-blue-500 shrink-0 mt-0.5" />
-              <span>Matched in <strong>{elapsedTime >= 60 ? `${Math.floor(elapsedTime / 60)}m ${elapsedTime % 60}s` : `${elapsedTime}s`}</strong> — manual catalog search estimate: ~{Math.max(15, items.length * 4)} min</span>
+              <span>Matched in <strong>{elapsedTime >= 60 ? `${Math.floor(elapsedTime / 60)}m ${elapsedTime % 60}s` : `${elapsedTime}s`}</strong> — manual estimate: ~{Math.max(15, items.length * 4)} min</span>
             </div>
           )}
         </div>
@@ -171,24 +213,30 @@ export default function ProductMatching({ items, onBack, onNext, elapsedTime }: 
           const conf = parseFloat(item.confidence);
           const isExpanded = expandedIndex === index;
           const shipping = getShippingEstimate(product);
-          const matchReasons = getMatchReasoning(product, conf);
+          const meta = getMeta(item.productId);
+          const enrichActions = getEnrichmentActions(product, meta);
           const lineTotal = parseFloat(item.unitPrice) * item.quantity;
+          const unspscCrumbs = getUnspscBreadcrumb(product.unspsc);
+          const categoryParts = product.categoryPath ? product.categoryPath.split(" > ") : [];
 
           return (
             <div 
               key={index} 
               className={`bg-white border rounded-lg transition-all group ${
-                isExpanded ? 'border-blue-300 shadow-sm' : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                isExpanded ? 'border-blue-300 shadow-md ring-1 ring-blue-100' : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
               }`}
               data-testid={`product-row-${index}`}
             >
               <div
                 className="p-2.5 sm:p-3 cursor-pointer"
                 onClick={() => setExpandedIndex(isExpanded ? null : index)}
+                data-testid={`product-toggle-${index}`}
               >
                 <div className="flex items-start gap-2 sm:gap-3">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
-                    <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 group-hover:text-blue-600" />
+                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                    isExpanded ? 'bg-blue-100' : 'bg-gray-100 group-hover:bg-blue-50'
+                  }`}>
+                    <Package className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isExpanded ? 'text-blue-600' : 'text-gray-500 group-hover:text-blue-600'}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
@@ -198,7 +246,7 @@ export default function ProductMatching({ items, onBack, onNext, elapsedTime }: 
                           {conf >= 0.95 ? <CheckCircle className="w-2.5 h-2.5" /> : <AlertCircle className="w-2.5 h-2.5" />}
                           {(conf * 100).toFixed(0)}%
                         </span>
-                        {isExpanded ? <ChevronUp className="w-3 h-3 text-gray-400" /> : <ChevronDown className="w-3 h-3 text-gray-400" />}
+                        {isExpanded ? <ChevronUp className="w-3 h-3 text-blue-500" /> : <ChevronDown className="w-3 h-3 text-gray-400" />}
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1 flex-wrap">
@@ -234,81 +282,198 @@ export default function ProductMatching({ items, onBack, onNext, elapsedTime }: 
               </div>
 
               {isExpanded && (
-                <div className="px-2.5 sm:px-3 pb-2.5 sm:pb-3 border-t border-gray-100 pt-2">
-                  <div className="bg-gray-50 rounded-lg p-2.5 space-y-2">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Info className="w-3 h-3 text-blue-500" />
-                      <span className="text-[10px] font-semibold text-gray-700 uppercase tracking-wide">Why This Product</span>
+                <div className="px-2.5 sm:px-3 pb-2.5 sm:pb-3 border-t border-blue-100 pt-2.5 space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {meta?.requestedName && (
+                    <div className="bg-slate-50 rounded-lg px-2.5 py-2 border border-slate-200">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <TextSearch className="w-3 h-3 text-slate-500" />
+                        <span className="text-[9px] font-semibold text-slate-600 uppercase tracking-wide">Search Query</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-slate-500">Your RFQ:</span>
+                        <span className="text-[11px] font-medium text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">"{meta.requestedName}"</span>
+                        <ArrowRight className="w-3 h-3 text-slate-400" />
+                        <span className="text-[11px] font-medium text-blue-700">Matched</span>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      {matchReasons.map((reason, i) => (
-                        <div key={i} className="flex items-start gap-1.5 text-[10px] sm:text-[11px] text-gray-600">
-                          <CheckCircle className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
-                          <span>{reason}</span>
-                        </div>
-                      ))}
-                    </div>
+                  )}
 
-                    <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-gray-200">
-                      <div>
-                        <div className="text-[9px] text-gray-500 uppercase tracking-wide font-semibold">Category</div>
-                        <div className="text-[10px] sm:text-[11px] text-gray-800 mt-0.5 flex items-center gap-1">
-                          <Tag className="w-2.5 h-2.5 text-gray-400" />
-                          {getCategoryShort(product.categoryPath)}
-                        </div>
+                  {meta && (meta.matchDetails.exactTerms.length > 0 || meta.matchDetails.synonymTerms.length > 0 || meta.matchDetails.fuzzyTerms.length > 0) && (
+                    <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg px-2.5 py-2 border border-teal-200" data-testid={`enrichment-trail-${index}`}>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Sparkles className="w-3 h-3 text-teal-600" />
+                        <span className="text-[9px] font-semibold text-teal-700 uppercase tracking-wide">VIA Enrichment Trail</span>
                       </div>
-                      <div>
-                        <div className="text-[9px] text-gray-500 uppercase tracking-wide font-semibold">Line Total</div>
-                        <div className="text-[10px] sm:text-[11px] font-mono font-bold text-gray-900 mt-0.5">${lineTotal.toFixed(2)}</div>
-                      </div>
-                      <div>
-                        <div className="text-[9px] text-gray-500 uppercase tracking-wide font-semibold">Pack Size</div>
-                        <div className="text-[10px] sm:text-[11px] text-gray-800 mt-0.5">{product.packSize} {product.packUnit}</div>
-                      </div>
-                      <div>
-                        <div className="text-[9px] text-gray-500 uppercase tracking-wide font-semibold">Shipping</div>
-                        <div className={`text-[10px] sm:text-[11px] font-medium mt-0.5 flex items-center gap-1 ${shipping.color}`}>
-                          <MapPin className="w-2.5 h-2.5" />
-                          Est. {shipping.text}
-                        </div>
+                      <div className="space-y-1.5">
+                        {meta.matchDetails.exactTerms.length > 0 && (
+                          <div className="flex items-start gap-1.5">
+                            <Hash className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="text-[9px] text-gray-500 uppercase tracking-wide">Direct hits: </span>
+                              <span className="text-[10px] sm:text-[11px]">
+                                {meta.matchDetails.exactTerms.map((term, i) => (
+                                  <span key={i}>
+                                    {i > 0 && <span className="text-gray-300">, </span>}
+                                    <span className="bg-green-100 text-green-800 px-1 py-0 rounded font-medium">{term}</span>
+                                  </span>
+                                ))}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        {meta.matchDetails.synonymTerms.length > 0 && (
+                          <div className="flex items-start gap-1.5">
+                            <BookOpen className="w-3 h-3 text-teal-500 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="text-[9px] text-gray-500 uppercase tracking-wide">Synonym expansion: </span>
+                              <span className="text-[10px] sm:text-[11px]">
+                                {meta.matchDetails.synonymTerms.map((term, i) => (
+                                  <span key={i}>
+                                    {i > 0 && <span className="text-gray-300">, </span>}
+                                    <span className="bg-teal-100 text-teal-800 px-1 py-0 rounded font-medium">{term}</span>
+                                  </span>
+                                ))}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        {meta.matchDetails.fuzzyTerms.length > 0 && (
+                          <div className="flex items-start gap-1.5">
+                            <TextSearch className="w-3 h-3 text-orange-500 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="text-[9px] text-gray-500 uppercase tracking-wide">Fuzzy match: </span>
+                              <span className="text-[10px] sm:text-[11px]">
+                                {meta.matchDetails.fuzzyTerms.map((term, i) => (
+                                  <span key={i}>
+                                    {i > 0 && <span className="text-gray-300">, </span>}
+                                    <span className="bg-orange-100 text-orange-800 px-1 py-0 rounded font-medium">{term}</span>
+                                  </span>
+                                ))}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        {meta.matchDetails.categoryBoost && (
+                          <div className="flex items-start gap-1.5">
+                            <Layers className="w-3 h-3 text-purple-500 shrink-0 mt-0.5" />
+                            <span className="text-[10px] sm:text-[11px] text-gray-700">
+                              <span className="bg-purple-100 text-purple-800 px-1 py-0 rounded font-medium">Category boost</span>
+                              <span className="text-gray-500"> — VIA taxonomy alignment increased match confidence</span>
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
+                  )}
 
-                    {product.certifications && product.certifications.length > 0 && (
-                      <div className="pt-2 border-t border-gray-200">
-                        <div className="text-[9px] text-gray-500 uppercase tracking-wide font-semibold mb-1">Certifications</div>
-                        <div className="flex flex-wrap gap-1">
-                          {product.certifications.map((cert, i) => (
-                            <Badge key={i} className="bg-indigo-50 text-indigo-700 text-[8px] sm:text-[9px] px-1.5 py-0">
-                              <Award className="w-2 h-2 mr-0.5" />
-                              {cert}
-                            </Badge>
+                  {(product.unspsc || categoryParts.length > 0) && (
+                    <div className="bg-indigo-50/50 rounded-lg px-2.5 py-2 border border-indigo-100">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <GitBranch className="w-3 h-3 text-indigo-500" />
+                        <span className="text-[9px] font-semibold text-indigo-600 uppercase tracking-wide">Taxonomy Classification</span>
+                      </div>
+                      {categoryParts.length > 0 && (
+                        <div className="flex items-center gap-0.5 flex-wrap mb-1.5">
+                          {categoryParts.map((part, i) => (
+                            <span key={i} className="flex items-center gap-0.5">
+                              {i > 0 && <ChevronRight className="w-2.5 h-2.5 text-indigo-300" />}
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                                i === categoryParts.length - 1 ? 'bg-indigo-100 text-indigo-800 font-medium' : 'text-indigo-600'
+                              }`}>{part}</span>
+                            </span>
                           ))}
                         </div>
-                      </div>
-                    )}
-
-                    {product.co2PerUnit != null && product.co2PerUnit > 0 && (
-                      <div className="pt-2 border-t border-gray-200 flex items-center gap-3">
-                        <div>
-                          <div className="text-[9px] text-gray-500 uppercase tracking-wide font-semibold">CO₂ / Unit</div>
-                          <div className="text-[10px] text-gray-800 mt-0.5">{product.co2PerUnit} kg</div>
+                      )}
+                      {unspscCrumbs.length > 0 && (
+                        <div className="flex items-center gap-0.5 flex-wrap">
+                          <span className="text-[9px] text-indigo-400 mr-1">UNSPSC:</span>
+                          {unspscCrumbs.map((crumb, i) => (
+                            <span key={i} className="flex items-center gap-0.5">
+                              {i > 0 && <ChevronRight className="w-2 h-2 text-indigo-200" />}
+                              <span className={`text-[9px] ${i === unspscCrumbs.length - 1 ? 'font-mono font-semibold text-indigo-700' : 'text-indigo-500'}`}>{crumb}</span>
+                            </span>
+                          ))}
                         </div>
-                        {(product.recycledContent ?? 0) > 0 && (
-                          <div>
-                            <div className="text-[9px] text-gray-500 uppercase tracking-wide font-semibold">Recycled Content</div>
-                            <div className="text-[10px] text-green-700 mt-0.5 font-medium">{product.recycledContent}%</div>
-                          </div>
-                        )}
-                        {product.contractTier && (
-                          <div>
-                            <div className="text-[9px] text-gray-500 uppercase tracking-wide font-semibold">Contract Tier</div>
-                            <div className="text-[10px] text-purple-700 mt-0.5 font-medium">{product.contractTier}</div>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      )}
+                    </div>
+                  )}
+
+                  <div className="bg-white rounded-lg p-2.5 border border-gray-200">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Sparkles className="w-3 h-3 text-amber-500" />
+                      <span className="text-[9px] font-semibold text-gray-600 uppercase tracking-wide">VIA Enrichment Applied</span>
+                      <span className="text-[8px] text-gray-400 ml-auto">{enrichActions.length} attributes enriched</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {enrichActions.map((action, i) => (
+                        <span key={i} className="text-[8px] sm:text-[9px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-full">
+                          {action}
+                        </span>
+                      ))}
+                    </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-gray-50 rounded px-2 py-1.5">
+                      <div className="text-[8px] text-gray-500 uppercase tracking-wide font-semibold">Line Total</div>
+                      <div className="text-[11px] font-mono font-bold text-gray-900 mt-0.5">${lineTotal.toFixed(2)}</div>
+                    </div>
+                    <div className="bg-gray-50 rounded px-2 py-1.5">
+                      <div className="text-[8px] text-gray-500 uppercase tracking-wide font-semibold">Shipping</div>
+                      <div className={`text-[11px] font-medium mt-0.5 flex items-center gap-1 ${shipping.color}`}>
+                        <MapPin className="w-2.5 h-2.5" />
+                        Est. {shipping.text}
+                      </div>
+                      <div className="text-[8px] text-gray-400">{shipping.label}</div>
+                    </div>
+                    <div className="bg-gray-50 rounded px-2 py-1.5">
+                      <div className="text-[8px] text-gray-500 uppercase tracking-wide font-semibold">Pack Size</div>
+                      <div className="text-[11px] text-gray-800 mt-0.5">{product.packSize} {product.packUnit}</div>
+                    </div>
+                    <div className="bg-gray-50 rounded px-2 py-1.5">
+                      <div className="text-[8px] text-gray-500 uppercase tracking-wide font-semibold">Contract</div>
+                      <div className="text-[11px] text-purple-700 mt-0.5 font-medium">{product.contractTier || "N/A"}</div>
+                      {product.preferredSupplier && <div className="text-[8px] text-green-600 font-medium">Preferred</div>}
+                    </div>
+                  </div>
+
+                  {product.certifications && product.certifications.length > 0 && (
+                    <div>
+                      <div className="text-[8px] text-gray-500 uppercase tracking-wide font-semibold mb-1">Certifications</div>
+                      <div className="flex flex-wrap gap-1">
+                        {product.certifications.map((cert, i) => (
+                          <Badge key={i} className="bg-indigo-50 text-indigo-700 text-[8px] sm:text-[9px] px-1.5 py-0">
+                            <Award className="w-2 h-2 mr-0.5" />
+                            {cert}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(product.co2PerUnit != null || (product.recycledContent ?? 0) > 0) && (
+                    <div className="flex items-center gap-3 text-[10px]">
+                      {product.co2PerUnit != null && product.co2PerUnit > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Leaf className="w-2.5 h-2.5 text-gray-400" />
+                          <span className="text-gray-500">CO₂:</span>
+                          <span className="font-medium text-gray-700">{product.co2PerUnit} kg/unit</span>
+                        </div>
+                      )}
+                      {(product.recycledContent ?? 0) > 0 && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-500">Recycled:</span>
+                          <span className="font-medium text-green-700">{product.recycledContent}%</span>
+                        </div>
+                      )}
+                      {product.mpn && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-500">MPN:</span>
+                          <span className="font-mono font-medium text-gray-700">{product.mpn}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
