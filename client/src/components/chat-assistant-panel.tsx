@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Minimize2, Maximize2, Bot, Sparkles, MessageSquare, ChevronLeft, Clock, TrendingDown, ShieldCheck, Leaf } from "lucide-react";
+import { X, Minimize2, Maximize2, Bot, Sparkles, MessageSquare, ChevronLeft, Clock, TrendingDown, ShieldCheck, Leaf, Expand, Shrink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -18,6 +18,8 @@ interface ChatAssistantPanelProps {
   onCartUpdate: (count: number) => void;
   onHighlightProducts: (productIds: string[]) => void;
   isMobile?: boolean;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 interface OrderData {
@@ -26,7 +28,7 @@ interface OrderData {
   swaps?: any[];
 }
 
-export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHighlightProducts, isMobile = false }: ChatAssistantPanelProps) {
+export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHighlightProducts, isMobile = false, isExpanded = false, onToggleExpand }: ChatAssistantPanelProps) {
   const [isMinimized, setIsMinimized] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -151,6 +153,8 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
 
   const panelClasses = isMobile
     ? `fixed inset-0 bg-white flex flex-col z-50 animate-in slide-in-from-bottom duration-300`
+    : isExpanded
+    ? `fixed inset-0 bg-white flex flex-col z-50 transition-all duration-300 ease-in-out`
     : `fixed right-0 top-0 h-full bg-white shadow-2xl border-l border-gray-200 flex flex-col z-50 transition-all duration-300 ease-in-out ${
         isMinimized ? 'w-[56px]' : 'w-[420px]'
       }`;
@@ -169,6 +173,15 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 <ChevronLeft className="w-4 h-4" />
               </button>
             )}
+            {isExpanded && (
+              <div className="flex items-center gap-3 mr-3">
+                <div>
+                  <div className="text-lg font-bold leading-tight">OPUS</div>
+                  <div className="text-[9px] text-blue-200">by OMNIA Partners</div>
+                </div>
+                <div className="h-6 w-px bg-white/30"></div>
+              </div>
+            )}
             <div className="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
               {isMinimized ? <MessageSquare className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
             </div>
@@ -181,6 +194,9 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 </div>
               </div>
             )}
+            {isExpanded && (
+              <a href="https://www.earley.com" target="_blank" rel="noopener noreferrer" className="ml-3 text-[10px] text-blue-200 hover:text-white transition-colors hidden sm:block">Earley Information Science</a>
+            )}
           </div>
           <div className="flex items-center gap-0.5">
             {startTime && !isMinimized && (
@@ -189,7 +205,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 {formatTime(elapsedTime)}
               </div>
             )}
-            {!isMobile && (
+            {!isMobile && !isExpanded && (
               <button
                 onClick={() => setIsMinimized(!isMinimized)}
                 className="p-1.5 hover:bg-white/20 rounded transition-colors"
@@ -198,7 +214,17 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
               </button>
             )}
-            {!isMinimized && !isMobile && (
+            {!isMinimized && !isMobile && onToggleExpand && (
+              <button
+                onClick={onToggleExpand}
+                className="p-1.5 hover:bg-white/20 rounded transition-colors"
+                data-testid="button-expand"
+                title={isExpanded ? "Exit full screen" : "Full screen"}
+              >
+                {isExpanded ? <Shrink className="w-3.5 h-3.5" /> : <Expand className="w-3.5 h-3.5" />}
+              </button>
+            )}
+            {!isMinimized && !isMobile && !isExpanded && (
               <button
                 onClick={onClose}
                 className="p-1.5 hover:bg-white/20 rounded transition-colors"
@@ -239,7 +265,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto p-3">
+            <div className={`flex-1 overflow-auto p-3 ${isExpanded ? 'max-w-4xl mx-auto w-full' : ''}`}>
               {currentStep === 0 && (
                 <div className="space-y-3">
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
@@ -310,6 +336,17 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 {index < currentStep ? '✓' : step.icon}
               </div>
             ))}
+          </div>
+        )}
+
+        {!isMinimized && (
+          <div className="shrink-0 px-3 py-1.5 border-t border-gray-100 flex items-center justify-between">
+            <a href="https://www.earley.com" target="_blank" rel="noopener noreferrer" className="text-[9px] text-gray-300 hover:text-gray-400 transition-colors" data-testid="link-earley">
+              earley.com
+            </a>
+            <span className="text-[9px] text-gray-200 select-none" data-testid="text-credit">
+              Conceived by Alexander Kline, AI Innovation Architect
+            </span>
           </div>
         )}
       </div>

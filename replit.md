@@ -154,6 +154,14 @@ R2C is powered by EIS's VIA platform — the data processing and enrichment tech
 
 # Recent Changes
 
+**February 2026 - Full-Screen Expand & Credits**
+- Added full-screen expand/collapse toggle to R2C sidebar agent panel (Expand/Shrink button in header)
+- Expanded mode: full-screen takeover with OPUS branding in header, max-width content container, Earley Information Science link
+- Sidebar mode: 420px fixed-width panel with minimize/close controls
+- Added discreet earley.com footer link (www.earley.com) in panel and standalone page
+- Added very discreet Alexander Kline credit as AI Innovation Architect in panel footer and standalone page
+- VIA branding precision: "Powered by VIA" in agent header, "VIA-enriched" in all data references, "· VIA-powered" on all intelligence panels (Agent Actions, Agent Intelligence, Agent Impact Summary)
+
 **February 2026 - EIS VIA Platform & Multi-Dimensional Value**
 - Added EIS VIA platform narrative to PRD documenting document ingestion pipeline, schema governance, taxonomy optimization, content enrichment, compliance checks, and search tuning as the foundation enabling R2C
 - VIA branded as EIS's proprietary data processing and enrichment technology; R2C works without it but performs dramatically better with VIA-enriched data

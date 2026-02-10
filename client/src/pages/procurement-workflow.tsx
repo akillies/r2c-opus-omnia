@@ -129,7 +129,7 @@ export default function ProcurementWorkflow() {
             </div>
           </div>
           <div className="flex items-center gap-6">
-            <div className="text-xs text-slate-500">Earley Information Science</div>
+            <a href="https://www.earley.com" target="_blank" rel="noopener noreferrer" className="text-xs text-slate-500 hover:text-slate-700 transition-colors">Earley Information Science</a>
             <div className="h-6 w-px bg-slate-300"></div>
             <div className="flex items-center gap-3">
               <div className="text-right">
@@ -193,6 +193,15 @@ export default function ProcurementWorkflow() {
           )}
         </div>
       </main>
+
+      <footer className="py-1.5 px-6 flex items-center justify-between">
+        <a href="https://www.earley.com" target="_blank" rel="noopener noreferrer" className="text-[9px] text-gray-300 hover:text-gray-400 transition-colors" data-testid="link-earley">
+          earley.com
+        </a>
+        <span className="text-[9px] text-gray-200 select-none" data-testid="text-credit">
+          Conceived by Alexander Kline, AI Innovation Architect
+        </span>
+      </footer>
 
       {/* Comparison Drawer */}
       <ComparisonDrawer

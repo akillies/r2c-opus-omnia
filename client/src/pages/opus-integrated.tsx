@@ -5,22 +5,25 @@ import ChatAssistantPanel from "@/components/chat-assistant-panel";
 
 export default function OpusIntegrated() {
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [cartItemCount, setCartItemCount] = useState(0);
   const [highlightedProducts, setHighlightedProducts] = useState<string[]>([]);
   const isMobile = useIsMobile();
 
   return (
     <div className="h-screen flex overflow-hidden bg-gray-50">
-      <div className={`flex-1 transition-all duration-300 ease-in-out ${
-        isAssistantOpen && !isMobile ? 'mr-[420px]' : ''
-      }`}>
-        <OpusStorefront
-          cartItemCount={cartItemCount}
-          onOpenAssistant={() => setIsAssistantOpen(true)}
-          highlightedProducts={highlightedProducts}
-          isAssistantOpen={isAssistantOpen}
-        />
-      </div>
+      {!isExpanded && (
+        <div className={`flex-1 transition-all duration-300 ease-in-out ${
+          isAssistantOpen && !isMobile ? 'mr-[420px]' : ''
+        }`}>
+          <OpusStorefront
+            cartItemCount={cartItemCount}
+            onOpenAssistant={() => setIsAssistantOpen(true)}
+            highlightedProducts={highlightedProducts}
+            isAssistantOpen={isAssistantOpen}
+          />
+        </div>
+      )}
 
       <ChatAssistantPanel
         isOpen={isAssistantOpen}
@@ -28,6 +31,8 @@ export default function OpusIntegrated() {
         onCartUpdate={setCartItemCount}
         onHighlightProducts={setHighlightedProducts}
         isMobile={isMobile}
+        isExpanded={isExpanded}
+        onToggleExpand={() => setIsExpanded(!isExpanded)}
       />
 
       {isAssistantOpen && isMobile && (
