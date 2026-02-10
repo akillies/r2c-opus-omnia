@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, boolean, timestamp, jsonb, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -15,6 +15,17 @@ export const products = pgTable("products", {
   isEco: boolean("is_eco").default(false),
   category: text("category"),
   specifications: jsonb("specifications"),
+  unspsc: varchar("unspsc", { length: 10 }),
+  categoryPath: text("category_path"),
+  brand: text("brand"),
+  mpn: text("mpn"),
+  packSize: integer("pack_size").default(1),
+  packUnit: text("pack_unit"),
+  certifications: text("certifications").array(),
+  contractTier: text("contract_tier"),
+  preferredSupplier: boolean("preferred_supplier").default(false),
+  co2PerUnit: real("co2_per_unit"),
+  recycledContent: integer("recycled_content").default(0),
 });
 
 export const orders = pgTable("orders", {
@@ -43,7 +54,7 @@ export const swapRecommendations = pgTable("swap_recommendations", {
   orderId: varchar("order_id").notNull(),
   originalProductId: varchar("original_product_id").notNull(),
   recommendedProductId: varchar("recommended_product_id").notNull(),
-  swapType: text("swap_type").notNull(), // pack_size, supplier, stock, sustainability
+  swapType: text("swap_type").notNull(),
   savingsAmount: decimal("savings_amount", { precision: 10, scale: 2 }),
   reason: text("reason"),
   isAccepted: boolean("is_accepted").default(false),

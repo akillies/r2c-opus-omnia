@@ -244,12 +244,12 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 <div className="space-y-3">
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
                     <p className="text-xs sm:text-sm text-blue-800">
-                      <strong>Your AI procurement agent is ready.</strong> Upload an RFQ file and I'll autonomously match products, enforce compliance, find savings, and prepare your optimized PO.
+                      <strong>Your AI procurement agent is ready.</strong> Upload an RFQ and I'll match products across 630+ cooperative suppliers, enforce contract compliance, find savings, and prepare your optimized PO.
                     </p>
-                    <div className="flex items-center gap-3 mt-2 text-[10px] text-blue-600">
+                    <div className="flex items-center gap-3 mt-2 text-[10px] text-blue-600 flex-wrap">
                       <span className="flex items-center gap-1"><TrendingDown className="w-3 h-3" /> Avg 18% savings</span>
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 5 min vs 3 hrs</span>
-                      <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> 100% compliant</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 10 min vs 3 hrs</span>
+                      <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> Cooperative compliant</span>
                     </div>
                   </div>
                   <FileUpload
@@ -333,11 +333,11 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
           </DialogHeader>
           <div className="space-y-4" id="success-dialog-description">
             <p className="text-gray-600">
-              Your purchase order has been autonomously optimized and submitted.
+              Your purchase order has been optimized against OMNIA Partners cooperative master agreements and submitted.
             </p>
             <div className="bg-gray-50 p-4 rounded-lg space-y-3">
               <div>
-                <div className="text-sm text-gray-500">Order Number</div>
+                <div className="text-sm text-gray-500">Purchase Order</div>
                 <div className="text-xl font-bold text-gray-900" data-testid="order-number">{orderNumber}</div>
               </div>
               <div className="grid grid-cols-3 gap-2 text-center">
@@ -354,11 +354,11 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 <div className="bg-white rounded-lg p-2 border">
                   <ShieldCheck className="w-4 h-4 mx-auto text-purple-600 mb-1" />
                   <div className="text-xs font-bold text-gray-900">100%</div>
-                  <div className="text-[10px] text-gray-500">Compliant</div>
+                  <div className="text-[10px] text-gray-500">Cooperative</div>
                 </div>
               </div>
               <div className="text-[11px] text-gray-500 text-center italic">
-                Manual processing would have taken ~3.5 hours
+                All items verified against publicly awarded cooperative contracts
               </div>
             </div>
             <div className="flex gap-3">

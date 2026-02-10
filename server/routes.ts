@@ -3,7 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertOrderSchema, insertOrderItemSchema, insertSwapRecommendationSchema } from "@shared/schema";
 import { z } from "zod";
-import { parseCSV, parseExcel, matchItemsToProducts } from "./file-parser";
+import { parseCSV, parseExcel } from "./file-parser";
+import { productMatcher } from "./matching";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Products
@@ -37,7 +38,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const products = await storage.getProducts();
-      const matchedItems = matchItemsToProducts(parsedResult.items, products);
+      productMatcher.initialize(products);
+      const matchedItems = productMatcher.matchItems(parsedResult.items);
 
       res.json({
         fileName: parsedResult.fileName,
@@ -81,11 +83,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else {
         const sampleItems = [
-          { productId: "prod-1", quantity: 48, unitPrice: "18.50", confidence: "0.98" },
-          { productId: "prod-2", quantity: 200, unitPrice: "2.75", confidence: "0.95" },
-          { productId: "prod-3", quantity: 72, unitPrice: "4.25", confidence: "0.99" },
-          { productId: "prod-4", quantity: 24, unitPrice: "8.50", confidence: "0.92" },
-          { productId: "prod-5", quantity: 500, unitPrice: "0.45", confidence: "0.97" }
+          { productId: "prod-01", quantity: 12, unitPrice: "18.50", confidence: "0.98" },
+          { productId: "prod-04", quantity: 48, unitPrice: "18.75", confidence: "0.93" },
+          { productId: "prod-05", quantity: 72, unitPrice: "4.25", confidence: "0.97" },
+          { productId: "prod-07", quantity: 24, unitPrice: "8.50", confidence: "0.92" },
+          { productId: "prod-09", quantity: 10, unitPrice: "45.00", confidence: "0.99" },
+          { productId: "prod-13", quantity: 50, unitPrice: "42.00", confidence: "0.96" },
+          { productId: "prod-24", quantity: 30, unitPrice: "11.50", confidence: "0.91" },
+          { productId: "prod-26", quantity: 20, unitPrice: "18.99", confidence: "0.95" },
+          { productId: "prod-33", quantity: 40, unitPrice: "58.00", confidence: "0.94" },
+          { productId: "prod-46", quantity: 24, unitPrice: "62.50", confidence: "0.97" },
         ];
 
         for (const item of sampleItems) {

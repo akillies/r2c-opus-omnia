@@ -14,113 +14,122 @@ interface OpusStorefrontProps {
 
 const featuredProducts = [
   {
-    id: "prod-1",
+    id: "prod-01",
     name: "Heavy-Duty Floor Cleaner Concentrate",
-    supplier: "CleanPro Supply",
+    supplier: "Grainger",
+    brand: "Diversey",
     price: "18.50",
     originalPrice: "22.00",
     image: "🧴",
     rating: 4.8,
     reviews: 124,
-    contract: "STATE-EDU-ABC",
+    contract: "OMNIA R-GR-JC-20001",
     inStock: true,
-    category: "Cleaning"
+    category: "Janitorial"
   },
   {
-    id: "prod-2",
-    name: "Microfiber Cleaning Cloths (12-Pack)",
-    supplier: "CleanPro Supply",
-    price: "2.75",
+    id: "prod-03",
+    name: "Microfiber Cleaning Cloths 16x16",
+    supplier: "Network Distribution",
+    brand: "Rubbermaid",
+    price: "24.99",
     image: "🧹",
     rating: 4.6,
     reviews: 89,
-    contract: "STATE-EDU-ABC",
+    contract: "OMNIA R-ND-JC-20003",
     inStock: true,
-    category: "Cleaning"
+    category: "Janitorial"
   },
   {
-    id: "prod-3",
-    name: "Disinfectant Spray Bottles",
-    supplier: "Hygiene Plus",
-    price: "4.25",
-    image: "🧼",
+    id: "prod-13",
+    name: "Multi-Purpose Copy Paper 8.5x11 20lb",
+    supplier: "ODP Business Solutions",
+    brand: "GP Pro",
+    price: "42.00",
+    image: "📄",
     rating: 4.9,
-    reviews: 256,
-    contract: "STATE-EDU-ABC",
+    reviews: 312,
+    contract: "OMNIA R-OD-OS-20010",
     inStock: true,
-    category: "Sanitization"
+    category: "Office"
   },
   {
-    id: "prod-4",
-    name: "Industrial Mop Heads",
-    supplier: "CleanPro Supply",
-    price: "8.50",
-    image: "🪣",
+    id: "prod-23",
+    name: "Nitrile Exam Gloves Powder-Free",
+    supplier: "Medline",
+    brand: "Medline",
+    price: "14.99",
+    image: "🧤",
+    rating: 4.7,
+    reviews: 256,
+    contract: "OMNIA R-MM-NR-20005",
+    inStock: true,
+    category: "Safety"
+  },
+  {
+    id: "prod-33",
+    name: "Hot Cups 12oz Paper White",
+    supplier: "ODP Business Solutions",
+    brand: "Dart",
+    price: "58.00",
+    image: "☕",
     rating: 4.4,
     reviews: 67,
-    contract: "STATE-EDU-ABC",
-    inStock: false,
-    category: "Cleaning"
-  },
-  {
-    id: "prod-5",
-    name: "Trash Can Liners 55gal (100ct)",
-    supplier: "EcoSupply Co",
-    price: "0.45",
-    image: "🗑️",
-    rating: 4.7,
-    reviews: 312,
-    contract: "STATE-EDU-ABC",
+    contract: "OMNIA R-OD-BF-20011",
     inStock: true,
-    isEco: true,
-    category: "Waste Mgmt"
+    category: "Breakroom"
   },
   {
-    id: "prod-6",
-    name: "Hand Sanitizer Dispenser",
-    supplier: "Hygiene Plus",
-    price: "24.99",
-    image: "🧴",
+    id: "prod-09",
+    name: "Trash Can Liners 55 Gallon (100ct)",
+    supplier: "Global Industrial",
+    brand: "Heritage",
+    price: "45.00",
+    image: "🗑️",
     rating: 4.5,
     reviews: 178,
-    contract: "STATE-EDU-ABC",
+    contract: "OMNIA R-GI-JC-20004",
     inStock: true,
-    category: "Sanitization"
+    isEco: false,
+    category: "Janitorial"
   },
   {
-    id: "prod-7",
-    name: "Anti-Bacterial Wipes (200ct)",
-    supplier: "Hygiene Plus",
-    price: "12.99",
-    image: "🧻",
+    id: "prod-41",
+    name: "LED T8 Tube Light 4ft 18W",
+    supplier: "Grainger",
+    brand: "Philips",
+    price: "8.99",
+    image: "💡",
     rating: 4.3,
     reviews: 95,
-    contract: "STATE-EDU-ABC",
+    contract: "OMNIA R-GR-FM-20008",
     inStock: true,
-    category: "Sanitization"
+    isEco: true,
+    category: "Facility"
   },
   {
-    id: "prod-8",
-    name: "Vacuum Bags Universal (10pk)",
-    supplier: "CleanPro Supply",
-    price: "6.75",
-    image: "🫧",
-    rating: 4.1,
+    id: "prod-30",
+    name: "First Aid Kit 50-Person ANSI A+",
+    supplier: "Safeware",
+    brand: "First Aid Only",
+    price: "89.99",
+    image: "🏥",
+    rating: 4.8,
     reviews: 42,
-    contract: "STATE-EDU-ABC",
+    contract: "OMNIA R-SW-SP-20007",
     inStock: true,
-    category: "Cleaning"
+    category: "Safety"
   }
 ];
 
 const categories = [
   "All Categories",
-  "Cleaning Supplies",
+  "Janitorial & Cleaning",
   "Office Supplies",
-  "Safety Equipment",
-  "IT & Electronics",
-  "Furniture",
-  "MRO Supplies"
+  "Safety & PPE",
+  "Breakroom & Food Service",
+  "Facility Maintenance",
+  "Medical & Lab"
 ];
 
 export default function OpusStorefront({ cartItemCount, onOpenAssistant, highlightedProducts = [], isAssistantOpen }: OpusStorefrontProps) {
@@ -181,7 +190,7 @@ export default function OpusStorefront({ cartItemCount, onOpenAssistant, highlig
               <div className="relative">
                 <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
-                  placeholder={isMobile ? "Search..." : "Search products, contracts, suppliers..."}
+                  placeholder={isMobile ? "Search..." : "Search 7.5M+ products, contracts, suppliers..."}
                   className="pl-8 sm:pl-10 pr-4 bg-white/95 text-gray-900 border-0 h-8 sm:h-9 text-sm focus:bg-white"
                   data-testid="input-storefront-search"
                 />
@@ -212,7 +221,7 @@ export default function OpusStorefront({ cartItemCount, onOpenAssistant, highlig
 
         {mobileMenuOpen && (
           <div className="lg:hidden border-t border-white/10 px-3 py-2 space-y-1 animate-in slide-in-from-top duration-200">
-            {['Browse', 'Contracts', 'Suppliers', 'Orders', 'Account'].map(item => (
+            {['Browse', 'Contracts', 'Suppliers', 'Orders', 'QuickConnect', 'Account'].map(item => (
               <button key={item} className="block w-full text-left px-3 py-2 text-sm hover:bg-white/10 rounded">
                 {item}
               </button>
@@ -226,7 +235,7 @@ export default function OpusStorefront({ cartItemCount, onOpenAssistant, highlig
               <button
                 key={i}
                 className={`whitespace-nowrap transition-colors py-0.5 border-b-2 ${
-                  i === 1 
+                  i === 0 
                     ? 'text-orange-400 font-semibold border-orange-400' 
                     : 'hover:text-blue-200 border-transparent hover:border-blue-300'
                 }`}
@@ -252,7 +261,7 @@ export default function OpusStorefront({ cartItemCount, onOpenAssistant, highlig
                     <h2 className="text-base sm:text-lg lg:text-xl font-bold">Requirements 2 Cart</h2>
                   </div>
                   <p className="text-blue-100 text-xs sm:text-sm mb-2.5 sm:mb-3 max-w-md">
-                    Upload your RFQ and let AI match products, find savings, and optimize your order automatically.
+                    Upload your RFQ and let AI match products across cooperative master agreements, find savings, and ensure compliance automatically.
                   </p>
                   <div className="flex items-center gap-2 sm:gap-3 mb-3">
                     <div className="flex items-center gap-1 text-[10px] sm:text-xs text-blue-200">
@@ -267,23 +276,23 @@ export default function OpusStorefront({ cartItemCount, onOpenAssistant, highlig
                     className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-95 h-8 sm:h-9 text-xs sm:text-sm"
                     data-testid="button-open-assistant"
                   >
-                    {isAssistantOpen ? 'Return to Assistant →' : 'Open R2C Assistant →'}
+                    {isAssistantOpen ? 'Return to Assistant \u2192' : 'Open R2C Assistant \u2192'}
                   </Button>
                 </div>
                 <div className="flex sm:flex-col items-center gap-3 sm:gap-4 text-xs sm:text-sm text-blue-200">
                   <div className="text-center">
-                    <div className="text-lg sm:text-2xl font-bold text-white">6M+</div>
+                    <div className="text-lg sm:text-2xl font-bold text-white">7.5M+</div>
                     <div className="text-[10px] sm:text-xs">Products</div>
                   </div>
                   <div className="w-px h-6 sm:h-px sm:w-10 bg-white/20 hidden sm:block"></div>
                   <div className="text-center">
-                    <div className="text-lg sm:text-2xl font-bold text-white">300+</div>
+                    <div className="text-lg sm:text-2xl font-bold text-white">630+</div>
                     <div className="text-[10px] sm:text-xs">Suppliers</div>
                   </div>
                   <div className="w-px h-6 sm:h-px sm:w-10 bg-white/20 hidden sm:block"></div>
                   <div className="text-center">
-                    <div className="text-lg sm:text-2xl font-bold text-white">650+</div>
-                    <div className="text-[10px] sm:text-xs">Contracts</div>
+                    <div className="text-lg sm:text-2xl font-bold text-white">120+</div>
+                    <div className="text-[10px] sm:text-xs">Categories</div>
                   </div>
                 </div>
               </div>
@@ -292,8 +301,8 @@ export default function OpusStorefront({ cartItemCount, onOpenAssistant, highlig
 
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm sm:text-base font-semibold text-gray-900">Cleaning Supplies</h3>
-              <Badge className="bg-gray-100 text-gray-600 text-[10px] sm:text-xs">{featuredProducts.length} products</Badge>
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900">Featured Products</h3>
+              <Badge className="bg-gray-100 text-gray-600 text-[10px] sm:text-xs">Cooperative Contracts</Badge>
             </div>
             <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500">
               <button className="px-2 py-1 rounded bg-[#1e3a5f] text-white text-xs">Grid</button>
@@ -346,7 +355,7 @@ export default function OpusStorefront({ cartItemCount, onOpenAssistant, highlig
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-gray-900 text-[11px] sm:text-xs leading-tight line-clamp-2 mb-0.5 sm:mb-1">{product.name}</h4>
-                      <p className="text-[10px] text-gray-500">{product.supplier}</p>
+                      <p className="text-[10px] text-gray-500">{product.supplier} <span className="text-gray-300">|</span> {product.brand}</p>
 
                       <div className="flex items-center gap-1 mt-0.5 sm:mt-1">
                         <div className="flex">
@@ -378,7 +387,7 @@ export default function OpusStorefront({ cartItemCount, onOpenAssistant, highlig
                         <span className="text-gray-300 hidden sm:inline">|</span>
                         <span className="text-gray-500 items-center gap-0.5 hidden sm:flex">
                           <Shield className="w-2.5 h-2.5" />
-                          Compliant
+                          Cooperative
                         </span>
                         {product.isEco && (
                           <>
