@@ -1,15 +1,33 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ShoppingCart, RotateCcw, Download, FileText, FileSpreadsheet, TrendingDown, Clock, ShieldCheck, Leaf, Zap, AlertTriangle, Users, Award, BarChart3, CheckCircle2, Package, Sparkles } from "lucide-react";
+import {
+  ArrowLeft, ShoppingCart, RotateCcw, Download, FileText, FileSpreadsheet,
+  TrendingDown, TrendingUp, Clock, ShieldCheck, Leaf, Zap, AlertTriangle, Users,
+  Award, BarChart3, CheckCircle2, Package, Sparkles, ChevronDown, ChevronUp,
+  ArrowRight, GitBranch, Target, Repeat, Database, Search
+} from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Product } from "@shared/schema";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+interface MatchedItemMeta {
+  productId: string;
+  requestedName: string;
+  matchDetails: {
+    exactTerms: string[];
+    fuzzyTerms: string[];
+    synonymTerms: string[];
+    categoryBoost: boolean;
+  };
+}
+
 interface CartSummaryProps {
   items: any[];
   swaps: any[];
+  matchMeta?: MatchedItemMeta[];
   onBack: () => void;
   onSubmit: () => void;
   isSubmitting: boolean;
@@ -28,7 +46,10 @@ interface ValueMetrics {
   totalValueCreated: number;
 }
 
-export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitting, elapsedTime, orderId }: CartSummaryProps) {
+export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit, isSubmitting, elapsedTime, orderId }: CartSummaryProps) {
+  const [showAuditTrail, setShowAuditTrail] = useState(false);
+  const [showValueDetails, setShowValueDetails] = useState(false);
+
   const { data: products } = useQuery<Product[]>({
     queryKey: ['/api/products']
   });
@@ -39,6 +60,7 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
   });
 
   const getProduct = (productId: string) => products?.find(p => p.id === productId);
+  const getMeta = (productId: string) => matchMeta?.find(m => m.productId === productId);
 
   const getSwapByOriginalProduct = (productId: string) => {
     return swaps.find(swap => swap.originalProductId === productId && swap.isAccepted);
@@ -66,8 +88,25 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
   const acceptedSwaps = swaps.filter(s => s.isAccepted).length;
   const ecoSwaps = swaps.filter(s => s.isAccepted && s.swapType === 'sustainability').length;
   const stockRisksAvoided = swaps.filter(s => s.isAccepted && s.swapType === 'stock').length;
-  const savingsPercent = originalTotal > 0 ? ((totalSavings / originalTotal) * 100).toFixed(0) : '0';
+  const savingsPercent = originalTotal > 0 ? ((totalSavings / originalTotal) * 100).toFixed(1) : '0';
   const manualEstimateMin = Math.max(15, items.length * 4);
+
+  const preferredCount = items.filter(item => getProduct(item.productId)?.preferredSupplier).length;
+  const uniqueSuppliers = new Set(items.map(item => getProduct(item.productId)?.supplier).filter(Boolean)).size;
+  const uniqueCategories = new Set(items.map(item => getProduct(item.productId)?.category).filter(Boolean)).size;
+  const onContractCount = items.filter(item => {
+    const p = getProduct(item.productId);
+    return p?.contract && p.contract.length > 0;
+  }).length;
+  const certifiedCount = items.filter(item => {
+    const p = getProduct(item.productId);
+    return p?.certifications && p.certifications.length > 0;
+  }).length;
+
+  const enrichedCount = items.filter(item => {
+    const p = getProduct(item.productId);
+    return p?.unspsc && p?.categoryPath;
+  }).length;
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -206,70 +245,126 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
           </div>
           <div className="bg-white/80 rounded-lg p-2 border border-white text-center">
             <Leaf className="w-3.5 h-3.5 mx-auto text-green-600 mb-0.5" />
-            <div className="text-sm font-bold text-gray-900">{valueMetrics?.sustainability.certifiedItemCount || 0}/{items.length}</div>
+            <div className="text-sm font-bold text-gray-900">{valueMetrics?.sustainability.certifiedItemCount || certifiedCount}/{items.length}</div>
             <div className="text-[8px] sm:text-[9px] text-gray-500">certified products</div>
           </div>
         </div>
       </div>
 
-      {valueMetrics && totalValueCreated > 0 && (
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-2.5">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <BarChart3 className="w-3.5 h-3.5 text-indigo-600" />
-            <span className="text-xs font-semibold text-indigo-800">Multi-Dimensional Value Created</span>
+      <div className="bg-gradient-to-r from-[#1e3a5f]/5 to-indigo-50 border border-[#1e3a5f]/20 rounded-lg p-2.5">
+        <button
+          onClick={() => setShowValueDetails(!showValueDetails)}
+          className="flex items-center justify-between w-full"
+          data-testid="button-toggle-value"
+        >
+          <div className="flex items-center gap-1.5">
+            <Target className="w-3.5 h-3.5 text-[#1e3a5f]" />
+            <span className="text-xs font-semibold text-[#1e3a5f]">Order Value Amplification</span>
           </div>
-          <div className="space-y-1 text-[10px] sm:text-[11px]">
-            {valueMetrics.directSavings > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-gray-700">
-                  <TrendingDown className="w-3 h-3 text-green-500 shrink-0" />
-                  Direct cost savings
-                </span>
-                <span className="font-bold text-green-700">${valueMetrics.directSavings.toFixed(2)}</span>
-              </div>
-            )}
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-gray-700">
-                <ShieldCheck className="w-3 h-3 text-purple-500 shrink-0" />
-                Maverick spend avoided
-              </span>
-              <span className="font-bold text-purple-700">${valueMetrics.maverickSpendAvoided.toFixed(0)}</span>
-            </div>
-            {valueMetrics.stockoutCostAvoided > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-gray-700">
-                  <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
-                  Stockout cost avoidance
-                </span>
-                <span className="font-bold text-amber-700">${valueMetrics.stockoutCostAvoided.toFixed(0)}</span>
-              </div>
-            )}
-            {valueMetrics.sustainability.co2ReductionKg > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-gray-700">
-                  <Leaf className="w-3 h-3 text-green-500 shrink-0" />
-                  CO₂ reduction
-                </span>
-                <span className="font-bold text-green-700">{valueMetrics.sustainability.co2ReductionKg} kg</span>
-              </div>
-            )}
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-gray-700">
-                <Users className="w-3 h-3 text-blue-500 shrink-0" />
-                Supplier consolidation
-              </span>
-              <span className="font-bold text-blue-700">{valueMetrics.spendConsolidation.supplierCount} suppliers</span>
-            </div>
-            <div className="pt-1.5 mt-1 border-t border-indigo-200 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 font-semibold text-indigo-900">
-                <Sparkles className="w-3 h-3 shrink-0" />
-                Total value created
-              </span>
-              <span className="font-bold text-indigo-900 text-sm">${totalValueCreated.toFixed(0)}</span>
-            </div>
+          {showValueDetails ? <ChevronUp className="w-3.5 h-3.5 text-[#1e3a5f]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#1e3a5f]" />}
+        </button>
+
+        <div className="grid grid-cols-3 gap-1.5 mt-2">
+          <div className="bg-white/80 rounded px-2 py-1.5 text-center">
+            <div className="text-[8px] text-gray-500 uppercase tracking-wide font-semibold">Baseline</div>
+            <div className="text-[11px] font-mono font-bold text-gray-400 line-through">${originalTotal.toFixed(0)}</div>
+          </div>
+          <div className="bg-white/80 rounded px-2 py-1.5 text-center">
+            <div className="text-[8px] text-green-600 uppercase tracking-wide font-semibold">Optimized</div>
+            <div className="text-[11px] font-mono font-bold text-green-700">${finalTotal.toFixed(0)}</div>
+          </div>
+          <div className="bg-white/80 rounded px-2 py-1.5 text-center">
+            <div className="text-[8px] text-[#1e3a5f] uppercase tracking-wide font-semibold">Saved</div>
+            <div className="text-[11px] font-mono font-bold text-[#1e3a5f]">{savingsPercent}%</div>
           </div>
         </div>
-      )}
+
+        {showValueDetails && (
+          <div className="mt-2.5 pt-2 border-t border-[#1e3a5f]/10 space-y-1.5 text-[10px] sm:text-[11px] animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-gray-600">
+                <ShieldCheck className="w-3 h-3 text-purple-500 shrink-0" />
+                On-contract items
+              </span>
+              <span className="font-semibold text-purple-700">{onContractCount}/{items.length}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-gray-600">
+                <Users className="w-3 h-3 text-blue-500 shrink-0" />
+                Preferred suppliers used
+              </span>
+              <span className="font-semibold text-blue-700">{preferredCount}/{items.length}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-gray-600">
+                <Package className="w-3 h-3 text-indigo-500 shrink-0" />
+                Categories covered
+              </span>
+              <span className="font-semibold text-indigo-700">{uniqueCategories} across {uniqueSuppliers} suppliers</span>
+            </div>
+            {stockRisksAvoided > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-gray-600">
+                  <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
+                  Stockout risks mitigated
+                </span>
+                <span className="font-semibold text-amber-700">{stockRisksAvoided}</span>
+              </div>
+            )}
+            {ecoSwaps > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-gray-600">
+                  <Leaf className="w-3 h-3 text-green-500 shrink-0" />
+                  Sustainability upgrades
+                </span>
+                <span className="font-semibold text-green-700">{ecoSwaps} items</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-gray-600">
+                <Repeat className="w-3 h-3 text-cyan-500 shrink-0" />
+                Reorder-ready
+              </span>
+              <span className="font-semibold text-cyan-700">Traceable PO</span>
+            </div>
+
+            {valueMetrics && totalValueCreated > 0 && (
+              <div className="mt-1.5 pt-1.5 border-t border-[#1e3a5f]/10 space-y-1">
+                <div className="text-[9px] text-gray-500 uppercase tracking-wide font-semibold">Total Value Created</div>
+                {valueMetrics.directSavings > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Direct savings</span>
+                    <span className="font-semibold text-green-700">${valueMetrics.directSavings.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Maverick spend avoided</span>
+                  <span className="font-semibold text-purple-700">${valueMetrics.maverickSpendAvoided.toFixed(0)}</span>
+                </div>
+                {valueMetrics.stockoutCostAvoided > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Stockout cost avoidance</span>
+                    <span className="font-semibold text-amber-700">${valueMetrics.stockoutCostAvoided.toFixed(0)}</span>
+                  </div>
+                )}
+                {valueMetrics.sustainability.co2ReductionKg > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">CO₂ reduction</span>
+                    <span className="font-semibold text-green-700">{valueMetrics.sustainability.co2ReductionKg} kg</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-1 border-t border-[#1e3a5f]/10">
+                  <span className="flex items-center gap-1 font-semibold text-[#1e3a5f]">
+                    <Sparkles className="w-3 h-3" />
+                    Total value
+                  </span>
+                  <span className="font-bold text-[#1e3a5f]">${totalValueCreated.toFixed(0)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 gap-2">
         {totalSavings > 0 && (
@@ -322,6 +417,113 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
             );
           })}
         </div>
+      </div>
+
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <button
+          onClick={() => setShowAuditTrail(!showAuditTrail)}
+          className="w-full bg-gray-50 px-2.5 py-1.5 border-b border-gray-200 flex items-center justify-between hover:bg-gray-100 transition-colors"
+          data-testid="button-toggle-audit"
+        >
+          <div className="flex items-center gap-1.5">
+            <GitBranch className="w-3 h-3 text-gray-500" />
+            <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Decision Traceability</span>
+            <span className="text-[9px] text-gray-400">{items.length} decisions</span>
+          </div>
+          {showAuditTrail ? <ChevronUp className="w-3 h-3 text-gray-400" /> : <ChevronDown className="w-3 h-3 text-gray-400" />}
+        </button>
+
+        {showAuditTrail && (
+          <div className="max-h-[250px] overflow-y-auto divide-y divide-gray-100 animate-in fade-in slide-in-from-top-1 duration-200" data-testid="audit-trail-list">
+            {items.map((item, index) => {
+              const product = getProduct(item.productId);
+              const originalProduct = getProduct(item.originalProductId || item.productId);
+              const meta = getMeta(item.originalProductId || item.productId) || getMeta(item.productId);
+              const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
+              const swapData = swap ? swaps.find(s => s.originalProductId === (item.originalProductId || item.productId) && s.isAccepted) : null;
+              if (!product) return null;
+
+              return (
+                <div key={index} className="px-2.5 py-2" data-testid={`audit-item-${index}`}>
+                  <div className="flex items-start gap-2">
+                    <div className="flex flex-col items-center gap-0.5 shrink-0 pt-0.5">
+                      <div className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center">
+                        <Search className="w-2.5 h-2.5 text-slate-400" />
+                      </div>
+                      <div className="w-px h-3 bg-gray-200" />
+                      <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center">
+                        <Target className="w-2.5 h-2.5 text-blue-500" />
+                      </div>
+                      {swapData && (
+                        <>
+                          <div className="w-px h-3 bg-gray-200" />
+                          <div className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center">
+                            <RotateCcw className="w-2.5 h-2.5 text-green-500" />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div>
+                        <div className="text-[8px] text-gray-400 uppercase tracking-wide font-semibold">RFQ Input</div>
+                        <div className="text-[10px] text-gray-600">
+                          {meta?.requestedName ? `"${meta.requestedName}"` : `Item ${index + 1}`}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[8px] text-blue-500 uppercase tracking-wide font-semibold">Matched</div>
+                        <div className="text-[10px] text-gray-900 font-medium">{originalProduct?.name || product.name}</div>
+                        <div className="text-[9px] text-gray-400">
+                          {meta?.matchDetails ? (
+                            <span>
+                              {meta.matchDetails.exactTerms.length > 0 && <span className="text-green-600">{meta.matchDetails.exactTerms.length} exact</span>}
+                              {meta.matchDetails.synonymTerms.length > 0 && <span className="text-teal-600">{meta.matchDetails.exactTerms.length > 0 ? ', ' : ''}{meta.matchDetails.synonymTerms.length} synonym</span>}
+                              {meta.matchDetails.fuzzyTerms.length > 0 && <span className="text-orange-600">{(meta.matchDetails.exactTerms.length > 0 || meta.matchDetails.synonymTerms.length > 0) ? ', ' : ''}{meta.matchDetails.fuzzyTerms.length} fuzzy</span>}
+                              {meta.matchDetails.categoryBoost && <span className="text-purple-500"> + category</span>}
+                              <span className="text-gray-400"> match</span>
+                            </span>
+                          ) : (
+                            <span>{parseFloat(item.confidence) >= 0.95 ? 'High' : 'Moderate'} confidence match</span>
+                          )}
+                          {' · '}
+                          {(parseFloat(item.confidence) * 100).toFixed(0)}% confidence
+                        </div>
+                      </div>
+                      {swapData && (
+                        <div>
+                          <div className="text-[8px] text-green-500 uppercase tracking-wide font-semibold">Swapped</div>
+                          <div className="text-[10px] text-green-800 font-medium">{product.name}</div>
+                          <div className="text-[9px] text-gray-400">
+                            {swapData.swapType === 'stock' && 'Stock risk mitigated'}
+                            {swapData.swapType === 'pack_size' && 'Bulk format savings'}
+                            {swapData.swapType === 'supplier' && 'Better supplier price'}
+                            {swapData.swapType === 'sustainability' && 'Eco upgrade'}
+                            {parseFloat(swapData.savingsAmount || '0') > 0 && ` · saved $${parseFloat(swapData.savingsAmount).toFixed(2)}`}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-[10px] font-mono font-semibold text-gray-900">${(parseFloat(product.unitPrice) * item.quantity).toFixed(2)}</div>
+                      <div className="text-[8px] text-gray-400">Qty {item.quantity}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 flex items-center gap-2">
+        <Database className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="text-[9px] text-slate-500 font-semibold uppercase tracking-wide">VIA Data Coverage</div>
+          <div className="text-[10px] text-slate-600">
+            {enrichedCount}/{items.length} items taxonomy-enriched · {onContractCount} on contract · {certifiedCount} certified
+          </div>
+        </div>
+        <div className="text-[9px] text-slate-400 font-medium shrink-0">Powered by VIA</div>
       </div>
 
       <div className="space-y-2 pt-2 border-t border-gray-100">

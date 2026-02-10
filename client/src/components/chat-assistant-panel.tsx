@@ -359,6 +359,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 <CartSummary
                   items={orderData.items}
                   swaps={orderData.swaps || []}
+                  matchMeta={matchMeta}
                   onBack={() => setCurrentStep(2)}
                   onSubmit={handleSubmitOrder}
                   isSubmitting={submitOrderMutation.isPending}
@@ -416,41 +417,68 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
       <Dialog open={isSuccessModalOpen} onOpenChange={setIsSuccessModalOpen}>
         <DialogContent className="sm:max-w-md" aria-describedby="success-dialog-description">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-green-700">
-              <CheckCircle2 className="w-8 h-8" />
-              Order Submitted!
+            <DialogTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <div className="text-green-700 text-lg">Order Submitted</div>
+                <div className="text-xs text-gray-500 font-normal">Optimized and compliance-verified</div>
+              </div>
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4" id="success-dialog-description">
-            <p className="text-gray-600">
-              Your purchase order has been optimized using VIA-enriched data against OMNIA Partners cooperative master agreements and submitted.
-            </p>
-            <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-              <div>
-                <div className="text-sm text-gray-500">Purchase Order</div>
-                <div className="text-xl font-bold text-gray-900" data-testid="order-number">{orderNumber}</div>
+            <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a87] rounded-lg p-4 text-white">
+              <div className="text-xs text-white/60 uppercase tracking-wider font-semibold">Purchase Order</div>
+              <div className="text-2xl font-bold mt-0.5" data-testid="order-number">{orderNumber}</div>
+              <div className="text-xs text-white/70 mt-1">OMNIA Partners Cooperative Agreement</div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-blue-50 rounded-lg p-2.5 border border-blue-100">
+                <Clock className="w-4 h-4 mx-auto text-blue-600 mb-1" />
+                <div className="text-sm font-bold text-gray-900">{formatTime(elapsedTime)}</div>
+                <div className="text-[9px] text-gray-500">vs ~{Math.max(15, (orderData?.items?.length || 10) * 4)} min</div>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="bg-white rounded-lg p-2 border">
-                  <Clock className="w-4 h-4 mx-auto text-blue-600 mb-1" />
-                  <div className="text-xs font-bold text-gray-900">{formatTime(elapsedTime)}</div>
-                  <div className="text-[10px] text-gray-500">Processing</div>
-                </div>
-                <div className="bg-white rounded-lg p-2 border">
-                  <TrendingDown className="w-4 h-4 mx-auto text-green-600 mb-1" />
-                  <div className="text-xs font-bold text-gray-900">~18%</div>
-                  <div className="text-[10px] text-gray-500">Cost Savings</div>
-                </div>
-                <div className="bg-white rounded-lg p-2 border">
-                  <ShieldCheck className="w-4 h-4 mx-auto text-purple-600 mb-1" />
-                  <div className="text-xs font-bold text-gray-900">100%</div>
-                  <div className="text-[10px] text-gray-500">Cooperative</div>
-                </div>
+              <div className="bg-green-50 rounded-lg p-2.5 border border-green-100">
+                <TrendingDown className="w-4 h-4 mx-auto text-green-600 mb-1" />
+                <div className="text-sm font-bold text-green-700">{orderData?.swaps?.filter((s: any) => s.isAccepted).length || 0}</div>
+                <div className="text-[9px] text-gray-500">Optimizations</div>
               </div>
-              <div className="text-[11px] text-gray-500 text-center italic">
-                All items matched against VIA-enriched catalog data and verified against publicly awarded cooperative contracts
+              <div className="bg-purple-50 rounded-lg p-2.5 border border-purple-100">
+                <ShieldCheck className="w-4 h-4 mx-auto text-purple-600 mb-1" />
+                <div className="text-sm font-bold text-gray-900">100%</div>
+                <div className="text-[9px] text-gray-500">Compliant</div>
               </div>
             </div>
+
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 space-y-1.5">
+              <div className="text-[10px] text-emerald-700 font-semibold uppercase tracking-wide">What R2C did for you</div>
+              <div className="text-[11px] text-gray-700 space-y-1">
+                <div className="flex items-start gap-1.5">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />
+                  <span>Parsed your RFQ and matched {orderData?.items?.length || 0} items against VIA-enriched catalog</span>
+                </div>
+                <div className="flex items-start gap-1.5">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />
+                  <span>Verified every item against cooperative master agreements</span>
+                </div>
+                <div className="flex items-start gap-1.5">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />
+                  <span>Evaluated stock risks, bulk savings, and sustainability upgrades</span>
+                </div>
+                <div className="flex items-start gap-1.5">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />
+                  <span>Full decision trail recorded for audit traceability</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 flex items-center justify-between">
+              <div className="text-[10px] text-slate-500">Every decision is traceable and auditable</div>
+              <div className="text-[9px] text-slate-400 font-medium">Powered by VIA</div>
+            </div>
+
             <div className="flex gap-3">
               <Button onClick={handleNewOrder} variant="outline" className="flex-1" data-testid="button-new-order">
                 New Order

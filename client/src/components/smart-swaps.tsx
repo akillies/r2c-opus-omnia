@@ -282,6 +282,45 @@ export default function SmartSwaps({
         </div>
       </div>
 
+      <div className="bg-gradient-to-r from-amber-50/80 to-orange-50/60 border border-amber-200/80 rounded-lg p-2.5" data-testid="proactive-insights">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Brain className="w-3.5 h-3.5 text-amber-600" />
+          <span className="text-xs font-semibold text-amber-800">Proactive Insights</span>
+        </div>
+        <div className="space-y-1.5 text-[10px] sm:text-[11px] text-gray-700">
+          {stockRiskCount > 0 && (
+            <div className="flex items-start gap-1.5">
+              <AlertTriangle className="w-3 h-3 text-red-500 shrink-0 mt-0.5" />
+              <span><strong className="text-red-700">Action recommended:</strong> {stockRiskCount} item{stockRiskCount > 1 ? 's have' : ' has'} inventory risk — accepting these swaps prevents potential backorder delays of 7-14 days</span>
+            </div>
+          )}
+          {bulkCount > 0 && (
+            <div className="flex items-start gap-1.5">
+              <TrendingDown className="w-3 h-3 text-blue-500 shrink-0 mt-0.5" />
+              <span>Bulk format{bulkCount > 1 ? 's reduce' : ' reduces'} your <strong className="text-blue-700">per-unit cost by up to {Math.round(potentialSavings / Math.max(1, bulkCount))}%</strong> — lower reorder frequency means less procurement overhead</span>
+            </div>
+          )}
+          {ecoCount > 0 && (
+            <div className="flex items-start gap-1.5">
+              <Leaf className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
+              <span>Accepting eco swaps advances <strong className="text-green-700">Green Purchasing Policy goals</strong> — {ecoCount} certified alternative{ecoCount > 1 ? 's' : ''} with equivalent or better performance</span>
+            </div>
+          )}
+          {acceptedCount === swaps.length && swaps.length > 0 && (
+            <div className="flex items-start gap-1.5">
+              <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
+              <span className="text-green-700 font-medium">All recommendations accepted — your order is fully optimized</span>
+            </div>
+          )}
+          {acceptedCount === 0 && swaps.length > 0 && (
+            <div className="flex items-start gap-1.5">
+              <Zap className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
+              <span>Review each swap to unlock <strong className="text-amber-700">${potentialSavings.toFixed(2)}</strong> in savings — you can compare side-by-side before accepting</span>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="space-y-2 max-h-[250px] sm:max-h-[300px] overflow-y-auto pr-1">
         {swaps.map((swap, index) => {
           const originalProduct = getProduct(swap.originalProductId);
