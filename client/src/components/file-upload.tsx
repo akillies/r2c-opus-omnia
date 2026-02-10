@@ -114,7 +114,7 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
     const interval = setInterval(() => {
       if (step >= steps.length) {
         clearInterval(interval);
-        setParsedItemCount(10);
+        setParsedItemCount(18);
         onUpload("K12-District-Annual-Supply-RFQ-2026.xlsx");
         return;
       }

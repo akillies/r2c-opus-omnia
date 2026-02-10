@@ -51,7 +51,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
   const [showAuditTrail, setShowAuditTrail] = useState(isExpanded);
   const [showValueDetails, setShowValueDetails] = useState(isExpanded);
 
-  const { data: products } = useQuery<Product[]>({
+  const { data: products, isLoading: isProductsLoading } = useQuery<Product[]>({
     queryKey: ['/api/products']
   });
 
@@ -78,6 +78,10 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
       if (originalProduct && currentProduct) {
         originalTotal += parseFloat(originalProduct.unitPrice) * item.quantity;
         finalTotal += parseFloat(currentProduct.unitPrice) * item.quantity;
+      } else {
+        const fallbackPrice = parseFloat(item.unitPrice || "0") * item.quantity;
+        originalTotal += fallbackPrice;
+        finalTotal += fallbackPrice;
       }
     });
 
@@ -192,6 +196,26 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
   };
 
   const totalValueCreated = valueMetrics?.totalValueCreated || 0;
+
+  if (isProductsLoading) {
+    return (
+      <div className="space-y-3 animate-pulse">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gray-200 rounded-full" />
+          <div className="h-5 bg-gray-200 rounded w-32" />
+        </div>
+        <div className="bg-gray-100 rounded-lg p-4 space-y-2">
+          <div className="h-4 bg-gray-200 rounded w-48" />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="h-16 bg-gray-200 rounded" />
+            <div className="h-16 bg-gray-200 rounded" />
+          </div>
+        </div>
+        <div className="h-20 bg-gray-100 rounded-lg" />
+        <div className="text-[10px] text-center text-gray-400">Loading order details...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -406,18 +430,18 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                 {items.map((item, index) => {
                   const product = getProduct(item.productId);
                   const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
-                  if (!product) return null;
-                  const lineTotal = parseFloat(product.unitPrice) * item.quantity;
+                  const unitPrice = product ? parseFloat(product.unitPrice) : parseFloat(item.unitPrice || "0");
+                  const lineTotal = unitPrice * item.quantity;
                   return (
                     <tr key={index} className="hover:bg-gray-50/50 transition-colors" data-testid={`cart-item-${index}`}>
                       <td className="px-2.5 py-2">
-                        <div className="font-medium text-gray-900">{product.name}</div>
-                        {product.brand && <div className="text-[9px] text-gray-400">{product.brand} · {product.mpn}</div>}
+                        <div className="font-medium text-gray-900">{product?.name || `Product ${item.productId}`}</div>
+                        {product?.brand && <div className="text-[9px] text-gray-400">{product.brand} · {product.mpn}</div>}
                       </td>
-                      <td className="px-2 py-2 text-gray-600">{product.supplier}</td>
-                      <td className="px-2 py-2 text-purple-600 text-[10px]">{product.contract || '—'}</td>
+                      <td className="px-2 py-2 text-gray-600">{product?.supplier || '—'}</td>
+                      <td className="px-2 py-2 text-purple-600 text-[10px]">{product?.contract || '—'}</td>
                       <td className="px-2 py-2 text-center text-gray-700">{item.quantity}</td>
-                      <td className="px-2 py-2 text-right font-mono text-gray-700">${parseFloat(product.unitPrice).toFixed(2)}</td>
+                      <td className="px-2 py-2 text-right font-mono text-gray-700">${unitPrice.toFixed(2)}</td>
                       <td className="px-2 py-2 text-right font-mono font-semibold text-gray-900">${lineTotal.toFixed(2)}</td>
                       <td className="px-2 py-2 text-center">
                         {swap ? (
@@ -438,14 +462,16 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
             items.map((item, index) => {
               const product = getProduct(item.productId);
               const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
-              if (!product) return null;
-              const lineTotal = parseFloat(product.unitPrice) * item.quantity;
+              const unitPrice = product ? parseFloat(product.unitPrice) : parseFloat(item.unitPrice || "0");
+              const lineTotal = unitPrice * item.quantity;
+              const displayName = product?.name || `Product ${item.productId}`;
+              const displaySupplier = product?.supplier || '';
               return (
                 <div key={index} className="px-2.5 py-2 hover:bg-gray-50/50 transition-colors" data-testid={`cart-item-${index}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-0.5">
-                        <h4 className="font-medium text-gray-900 text-[11px] sm:text-xs truncate">{product.name}</h4>
+                        <h4 className="font-medium text-gray-900 text-[11px] sm:text-xs truncate">{displayName}</h4>
                         {swap && (
                           <Badge className="bg-green-100 text-green-700 text-[7px] sm:text-[8px] px-1 py-0 shrink-0 flex items-center gap-0.5">
                             <RotateCcw className="w-2 h-2" />
@@ -454,7 +480,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                         )}
                       </div>
                       <p className="text-[9px] sm:text-[10px] text-gray-500">
-                        {item.quantity} × ${parseFloat(product.unitPrice).toFixed(2)} · {product.supplier}
+                        {item.quantity} × ${unitPrice.toFixed(2)}{displaySupplier ? ` · ${displaySupplier}` : ''}
                       </p>
                     </div>
                     <span className="font-mono font-semibold text-gray-900 text-[11px] sm:text-xs shrink-0">${lineTotal.toFixed(2)}</span>

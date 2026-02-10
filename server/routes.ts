@@ -82,35 +82,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       } else {
-        const sampleItems = [
-          { productId: "prod-01", quantity: 12, unitPrice: "18.50", confidence: "0.94" },
-          { productId: "prod-03", quantity: 20, unitPrice: "24.99", confidence: "0.96" },
-          { productId: "prod-05", quantity: 48, unitPrice: "4.89", confidence: "0.97" },
-          { productId: "prod-07", quantity: 36, unitPrice: "8.50", confidence: "0.95" },
-          { productId: "prod-09", quantity: 10, unitPrice: "45.00", confidence: "0.99" },
-          { productId: "prod-11", quantity: 25, unitPrice: "42.99", confidence: "0.98" },
-          { productId: "prod-15", quantity: 8, unitPrice: "3.29", confidence: "0.91" },
-          { productId: "prod-21", quantity: 60, unitPrice: "14.99", confidence: "0.98" },
-          { productId: "prod-27", quantity: 30, unitPrice: "18.99", confidence: "0.94" },
-          { productId: "prod-29", quantity: 5, unitPrice: "58.00", confidence: "0.93" },
-          { productId: "prod-31", quantity: 40, unitPrice: "64.99", confidence: "0.97" },
-          { productId: "prod-35", quantity: 15, unitPrice: "42.50", confidence: "0.92" },
-          { productId: "prod-37", quantity: 4, unitPrice: "72.00", confidence: "0.96" },
-          { productId: "prod-39", quantity: 30, unitPrice: "16.99", confidence: "0.95" },
-          { productId: "prod-41", quantity: 6, unitPrice: "89.99", confidence: "0.94" },
-          { productId: "prod-43", quantity: 24, unitPrice: "18.99", confidence: "0.93" },
-          { productId: "prod-46", quantity: 20, unitPrice: "52.00", confidence: "0.97" },
-          { productId: "prod-50", quantity: 10, unitPrice: "34.99", confidence: "0.92" },
+        const sampleItemDefs = [
+          { productId: "prod-01", quantity: 12, confidence: "0.94" },
+          { productId: "prod-03", quantity: 20, confidence: "0.96" },
+          { productId: "prod-05", quantity: 48, confidence: "0.97" },
+          { productId: "prod-07", quantity: 36, confidence: "0.95" },
+          { productId: "prod-09", quantity: 10, confidence: "0.99" },
+          { productId: "prod-11", quantity: 25, confidence: "0.98" },
+          { productId: "prod-15", quantity: 8, confidence: "0.91" },
+          { productId: "prod-21", quantity: 60, confidence: "0.98" },
+          { productId: "prod-27", quantity: 30, confidence: "0.94" },
+          { productId: "prod-29", quantity: 5, confidence: "0.93" },
+          { productId: "prod-31", quantity: 40, confidence: "0.97" },
+          { productId: "prod-35", quantity: 15, confidence: "0.92" },
+          { productId: "prod-37", quantity: 4, confidence: "0.96" },
+          { productId: "prod-39", quantity: 30, confidence: "0.95" },
+          { productId: "prod-41", quantity: 6, confidence: "0.94" },
+          { productId: "prod-43", quantity: 24, confidence: "0.93" },
+          { productId: "prod-46", quantity: 20, confidence: "0.97" },
+          { productId: "prod-50", quantity: 10, confidence: "0.92" },
         ];
 
-        for (const item of sampleItems) {
+        let totalAmount = 0;
+        for (const item of sampleItemDefs) {
+          const product = products.find((p: any) => p.id === item.productId);
+          const unitPrice = product ? product.unitPrice : "0";
+          totalAmount += parseFloat(unitPrice) * item.quantity;
           const orderItem = await storage.createOrderItem({
             orderId: order.id,
             ...item,
+            unitPrice,
             isSwapped: false
           });
           orderItems.push(orderItem);
         }
+
+        await storage.updateOrder(order.id, { totalAmount: totalAmount.toFixed(2) });
       }
 
       const swapRecommendations = generateSwapRecommendations(order.id, orderItems, products);
@@ -118,7 +125,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createSwapRecommendation(swap);
       }
 
-      res.json({ order, items: orderItems });
+      const updatedOrder = await storage.getOrder(order.id);
+      res.json({ order: updatedOrder || order, items: orderItems });
     } catch (error) {
       console.error('Order creation error:', error);
       res.status(400).json({ message: "Invalid order data" });
@@ -355,17 +363,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Swap not found" });
       }
 
-      // Update the order item to use the recommended product
+      const products = await storage.getProducts();
+      const recommendedProduct = products.find((p: any) => p.id === swap.recommendedProductId);
+
       const items = await storage.getOrderItems(orderId);
       const targetItem = items.find(item => item.productId === swap.originalProductId && !item.isSwapped);
       
       if (targetItem) {
         await storage.updateOrderItem(targetItem.id, {
           productId: swap.recommendedProductId,
+          unitPrice: recommendedProduct ? recommendedProduct.unitPrice : targetItem.unitPrice,
           isSwapped: true,
           originalProductId: swap.originalProductId
         });
       }
+
+      const updatedItems = await storage.getOrderItems(orderId);
+      let newTotal = 0;
+      for (const item of updatedItems) {
+        newTotal += parseFloat(item.unitPrice) * item.quantity;
+      }
+      await storage.updateOrder(orderId, { totalAmount: newTotal.toFixed(2) });
 
       res.json({ success: true, swap });
     } catch (error) {
