@@ -70,7 +70,7 @@ export default function ProductMatching({ items, onBack, onNext, elapsedTime }: 
           </div>
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-3 h-3 text-purple-500 shrink-0" />
-            <span>{allOnContract ? 'All items on approved contracts' : 'Contract compliance verified'}</span>
+            <span>{allOnContract ? 'All items on OMNIA cooperative master agreements' : 'Cooperative contract compliance verified'}</span>
           </div>
           {elapsedTime != null && elapsedTime > 0 && (
             <div className="flex items-center gap-1.5">
@@ -118,16 +118,25 @@ export default function ProductMatching({ items, onBack, onNext, elapsedTime }: 
                   </div>
                   <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1 flex-wrap">
                     <span className="text-[10px] sm:text-xs text-gray-500">{product.supplier}</span>
+                    {product.brand && (
+                      <>
+                        <span className="text-[10px] text-gray-300">|</span>
+                        <span className="text-[10px] sm:text-xs text-gray-500">{product.brand}</span>
+                      </>
+                    )}
                     <span className="text-[10px] text-gray-300">|</span>
                     <span className="text-[10px] sm:text-xs text-gray-500">Qty: {item.quantity}</span>
                     <span className="text-[10px] text-gray-300">|</span>
                     <span className="text-[10px] sm:text-xs font-mono font-semibold text-gray-900">${parseFloat(item.unitPrice).toFixed(2)}/ea</span>
                   </div>
-                  <div className="flex items-center gap-1.5 mt-1 sm:mt-1.5">
+                  <div className="flex items-center gap-1.5 mt-1 sm:mt-1.5 flex-wrap">
                     <Badge className="bg-purple-100 text-purple-700 text-[9px] sm:text-[10px] px-1.5 py-0">{product.contract}</Badge>
                     <Badge className={`text-[9px] sm:text-[10px] px-1.5 py-0 ${product.availability === "In Stock" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
                       {product.availability}
                     </Badge>
+                    {product.isEco && (
+                      <Badge className="bg-green-50 text-green-600 text-[9px] sm:text-[10px] px-1.5 py-0">🌱 Eco</Badge>
+                    )}
                   </div>
                 </div>
               </div>

@@ -117,6 +117,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Value metrics endpoint — computes multi-dimensional value from order data
+  app.get("/api/orders/:id/value-metrics", async (req, res) => {
+    try {
+      const order = await storage.getOrder(req.params.id);
+      if (!order) return res.status(404).json({ message: "Order not found" });
+
+      const items = await storage.getOrderItems(order.id);
+      const swaps = await storage.getSwapRecommendations(order.id);
+      const products = await storage.getProducts();
+      const getProduct = (id: string) => products.find((p: any) => p.id === id);
+
+      let originalTotal = 0;
+      let finalTotal = 0;
+      let contractCompliantCount = 0;
+      let preferredSupplierCount = 0;
+      let totalCo2Original = 0;
+      let totalCo2Final = 0;
+      let totalRecycledContent = 0;
+      const suppliers = new Set<string>();
+      const categories = new Set<string>();
+      let certifiedItemCount = 0;
+      let ecoItemCount = 0;
+
+      for (const item of items) {
+        const product = getProduct(item.productId);
+        const originalProduct = getProduct(item.originalProductId || item.productId);
+        if (!product) continue;
+
+        const price = parseFloat(product.unitPrice) * item.quantity;
+        finalTotal += price;
+
+        if (originalProduct) {
+          originalTotal += parseFloat(originalProduct.unitPrice) * item.quantity;
+          totalCo2Original += (originalProduct.co2PerUnit || 0) * item.quantity;
+        }
+
+        totalCo2Final += (product.co2PerUnit || 0) * item.quantity;
+        if (product.contract) contractCompliantCount++;
+        if (product.preferredSupplier) preferredSupplierCount++;
+        if (product.recycledContent) totalRecycledContent += product.recycledContent;
+        if (product.certifications && product.certifications.length > 0) certifiedItemCount++;
+        if (product.isEco) ecoItemCount++;
+        suppliers.add(product.supplier);
+        if (product.category) categories.add(product.category);
+      }
+
+      const acceptedSwaps = swaps.filter((s: any) => s.isAccepted);
+      const stockSwaps = swaps.filter((s: any) => s.swapType === 'stock');
+      const ecoSwaps = swaps.filter((s: any) => s.swapType === 'sustainability');
+      const totalSavings = originalTotal - finalTotal;
+
+      // Maverick spend prevention: estimated 15% premium avoided by using cooperative pricing
+      const maverickSpendAvoided = finalTotal * 0.15;
+      // Stockout cost avoidance: rush shipping + downtime estimate per stockout risk
+      const stockoutCostAvoided = stockSwaps.length * 350;
+      // CO2 reduction from swaps
+      const co2Reduction = Math.max(0, totalCo2Original - totalCo2Final);
+      const avgRecycledContent = items.length > 0 ? Math.round(totalRecycledContent / items.length) : 0;
+
+      res.json({
+        directSavings: totalSavings,
+        maverickSpendAvoided,
+        stockoutCostAvoided,
+        contractCompliance: {
+          compliantCount: contractCompliantCount,
+          totalCount: items.length,
+          rate: items.length > 0 ? Math.round((contractCompliantCount / items.length) * 100) : 0
+        },
+        sustainability: {
+          co2ReductionKg: parseFloat(co2Reduction.toFixed(1)),
+          ecoItemCount,
+          ecoSwapsAvailable: ecoSwaps.length,
+          ecoSwapsAccepted: ecoSwaps.filter((s: any) => s.isAccepted).length,
+          avgRecycledContent,
+          certifiedItemCount
+        },
+        spendConsolidation: {
+          supplierCount: suppliers.size,
+          categoryCount: categories.size,
+          preferredSupplierCount
+        },
+        swapSummary: {
+          total: swaps.length,
+          accepted: acceptedSwaps.length,
+          totalPotentialSavings: swaps.reduce((acc: number, s: any) => acc + Math.max(0, parseFloat(s.savingsAmount || "0")), 0),
+          realizedSavings: acceptedSwaps.reduce((acc: number, s: any) => acc + Math.max(0, parseFloat(s.savingsAmount || "0")), 0)
+        },
+        totalValueCreated: totalSavings + maverickSpendAvoided + stockoutCostAvoided
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to compute value metrics" });
+    }
+  });
+
   function generateSwapRecommendations(orderId: string, orderItems: any[], products: any[]): any[] {
     const recommendations: any[] = [];
     const usedAlternatives = new Set<string>();
@@ -128,12 +222,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentPrice = parseFloat(currentProduct.unitPrice);
       const currentName = currentProduct.name.toLowerCase();
       const keywords = currentName.split(/[\s\-()]+/).filter((w: string) => w.length > 3);
+      const currentCategory = currentProduct.category || '';
+      const currentUnspsc = currentProduct.unspsc || '';
 
       const alternatives = products
         .filter((p: any) => {
           if (p.id === item.productId || usedAlternatives.has(p.id)) return false;
           const altName = p.name.toLowerCase();
-          return keywords.some((kw: string) => altName.includes(kw)) || p.category === currentProduct.category;
+          const nameMatch = keywords.some((kw: string) => altName.includes(kw));
+          const categoryMatch = p.category === currentCategory;
+          const unspscMatch = currentUnspsc && p.unspsc && p.unspsc.substring(0, 4) === currentUnspsc.substring(0, 4);
+          return nameMatch || categoryMatch || unspscMatch;
         })
         .map((alt: any) => {
           const altPrice = parseFloat(alt.unitPrice);
@@ -144,24 +243,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           if (currentProduct.availability === 'Low Stock' && alt.availability === 'In Stock' && altPrice <= currentPrice * 1.05) {
             swapType = 'stock';
-            reason = `Stock risk avoided — ${currentProduct.name} is low stock, this equivalent ships immediately`;
+            reason = `Stock risk avoided — ${currentProduct.name} is low stock, this equivalent from ${alt.supplier} ships immediately`;
             priority = 100;
-          } else if (alt.unitOfMeasure !== currentProduct.unitOfMeasure && altPrice < currentPrice && savings > 0) {
+          } else if (alt.packSize && currentProduct.packSize && alt.packSize > currentProduct.packSize && altPrice / alt.packSize < currentPrice / currentProduct.packSize) {
             swapType = 'pack_size';
-            const perUnitSavings = ((currentPrice - altPrice) / currentPrice * 100).toFixed(0);
-            reason = `Bulk savings — ${alt.unitOfMeasure} format is ${perUnitSavings}% cheaper per unit than ${currentProduct.unitOfMeasure}`;
+            const perUnitCurrent = currentPrice / currentProduct.packSize;
+            const perUnitAlt = altPrice / alt.packSize;
+            const perUnitSavings = ((perUnitCurrent - perUnitAlt) / perUnitCurrent * 100).toFixed(0);
+            reason = `Bulk savings — ${alt.packSize}-ct format is ${perUnitSavings}% cheaper per unit than ${currentProduct.packSize}-ct`;
             priority = 80;
           } else if (alt.isEco && !currentProduct.isEco && altPrice <= currentPrice * 1.1) {
             swapType = 'sustainability';
+            const certList = alt.certifications?.length ? alt.certifications.join(', ') : 'eco-certified';
+            const co2Savings = (currentProduct.co2PerUnit && alt.co2PerUnit && alt.co2PerUnit < currentProduct.co2PerUnit)
+              ? ` — ${((1 - alt.co2PerUnit / currentProduct.co2PerUnit) * 100).toFixed(0)}% lower carbon footprint`
+              : '';
             if (altPrice <= currentPrice) {
-              reason = `Eco-friendly alternative at same or lower price — meets Green Purchasing Policy`;
+              reason = `${certList} alternative at same or lower price${co2Savings} — meets Green Purchasing Policy`;
             } else {
-              reason = `Eco-certified option at only $${(altPrice - currentPrice).toFixed(2)}/unit more — aligns with sustainability mandate`;
+              reason = `${certList} option at only $${(altPrice - currentPrice).toFixed(2)}/unit more${co2Savings} — aligns with sustainability mandate`;
             }
             priority = 60;
           } else if (savings > 0 && alt.supplier !== currentProduct.supplier) {
             swapType = 'supplier';
-            reason = `Better price from ${alt.supplier} — saves $${savings.toFixed(2)} on this line (${((savings / (currentPrice * item.quantity)) * 100).toFixed(0)}% reduction)`;
+            const tierNote = alt.contractTier === 'Tier 1' ? ' (Tier 1 cooperative supplier)' : '';
+            reason = `Better price from ${alt.supplier}${tierNote} — saves $${savings.toFixed(2)} on this line (${((savings / (currentPrice * item.quantity)) * 100).toFixed(0)}% reduction)`;
             priority = 70;
           } else if (alt.supplier !== currentProduct.supplier && altPrice < currentPrice) {
             swapType = 'supplier';

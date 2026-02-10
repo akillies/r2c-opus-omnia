@@ -240,7 +240,7 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
               <p className="text-[10px] sm:text-xs text-blue-700 mt-1.5">
                 {uploadProgress < 40 ? 'Parsing file structure and format' :
                  uploadProgress < 70 ? 'Intelligently detecting product names, quantities, and units' :
-                 'Cross-referencing against 6M+ catalog products and approved contracts'}
+                 'Cross-referencing against 7.5M+ enriched catalog items across 630+ cooperative suppliers'}
               </p>
             </div>
           ) : (
@@ -252,7 +252,7 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
                 <p className="font-medium text-blue-900 text-xs sm:text-sm" data-testid="text-items-detected">
                   {parsedItemCount} items detected & matched
                 </p>
-                <p className="text-[10px] sm:text-xs text-blue-700">All items verified against approved contracts</p>
+                <p className="text-[10px] sm:text-xs text-blue-700">All items verified against OMNIA cooperative master agreements</p>
               </div>
             </div>
           )}

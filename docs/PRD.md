@@ -23,6 +23,60 @@ Every day, procurement teams at schools, hospitals, municipalities, and corporat
 
 ---
 
+## The Data Foundation: EIS Enterprise Content Services
+
+R2C does not exist in a vacuum. It is the **agentic commerce layer** that sits atop a rigorous data foundation built by **EIS (Enterprise Information Solutions)**. Before a single RFQ can be processed intelligently, the underlying catalog data must be clean, governed, enriched, and optimized for discovery. This is the work that precedes R2C and makes it possible.
+
+### What EIS Built for OMNIA's OPUS Platform
+
+EIS transformed raw, heterogeneous supplier data — JSON feeds, ElasticSearch indices, flat-file catalogs from 630+ cooperative suppliers — into a **well-governed relational schema** designed for analytics, PIM-like workflows, search, and ERP integration. This foundational work includes:
+
+**Schema Detection & Attribute Mapping**
+- Automated detection of incoming data schemas from hundreds of supplier feeds
+- Attribute mapping across disparate naming conventions to a unified product model
+- Master attribution schema drawing from industry standards (Schema.org, GS1, eCl@ss) to support navigation, syndication, and reporting
+
+**Taxonomy Optimization & Product Modeling**
+- UNSPSC classification and category path hierarchy across 7.5M+ SKUs
+- Variant product modeling and attribute inheritance for pack sizes, configurations, and bundles
+- Category-specific facet generation for meaningful filtering and comparison
+
+**Content Enrichment & Governance**
+- Rewriting product titles and descriptions for consistency and search relevance
+- Filling missing attributes (brand, MPN, certifications, specifications) from authoritative sources
+- Keyword enrichment and synonym generation to bridge procurement vocabulary gaps
+- Governance frameworks ensuring data quality across the multi-million-SKU catalog
+
+**Search & Discovery Enhancement**
+- Elastic configuration tuning: field weighting, analyzer chains, synonym enrichment
+- Search relevance improvement via enriched keyword generation and attribute normalization
+- Analytics instrumentation to measure findability improvements
+- Faceting and filtering optimization using normalized, enriched attributes
+
+**Sustainability & Compliance Data**
+- CO₂ per unit tracking and recycled content percentages
+- Certification capture (Green Seal, EPA Safer Choice, UL ECOLOGO, FSC, Energy Star)
+- Contract tier classification and preferred supplier designation
+- Cooperative master agreement mapping (OMNIA R-XXXXX format)
+
+### How EIS Enables R2C
+
+Every capability of R2C is powered by this enriched data layer:
+
+| R2C Capability | EIS Data Foundation |
+|---|---|
+| BM25 product matching with synonym expansion | Enriched keywords, synonym dictionaries, normalized attributes |
+| UNSPSC-aware category matching | Taxonomy optimization, category path hierarchy |
+| Contract compliance enforcement | Master agreement mapping, contract tier classification |
+| Eco-friendly swap recommendations | CO₂ data, certifications, recycled content enrichment |
+| Supplier consolidation analysis | Normalized supplier identities, preferred supplier flags |
+| Pack size optimization | Variant modeling, attribute inheritance, pack size normalization |
+| Confidence scoring | Clean, governed attributes enabling precise text matching |
+
+**R2C is the peak of EIS's data strategy** — the point where governed, enriched, high-quality catalog data translates directly into autonomous procurement value. Without the foundation, the agent would be matching against noisy, inconsistent data and producing unreliable results.
+
+---
+
 ## The Vision
 
 **R2C (Requirements 2 Cart)** is an agentic commerce system that autonomously converts RFQs into optimized purchase orders in minutes, not days.
@@ -30,32 +84,35 @@ Every day, procurement teams at schools, hospitals, municipalities, and corporat
 Unlike traditional e-procurement tools that are essentially search engines with shopping carts, R2C deploys an **AI agent** that acts on behalf of the procurement officer. The agent doesn't just suggest — it **executes**:
 
 - **Reads and interprets** any RFQ format (CSV, Excel, PDF) with intelligent column detection
-- **Matches products** against a catalog of 6M+ items across 300+ suppliers with confidence scoring
-- **Enforces compliance** by only matching to contract-approved products
-- **Optimizes cost** by analyzing pack sizes, bulk pricing, supplier alternatives, and seasonal pricing
+- **Matches products** against an enriched catalog of 7.5M+ items across 630+ cooperative suppliers with BM25 confidence scoring
+- **Enforces compliance** by only matching to cooperative master agreement-approved products
+- **Optimizes cost** by analyzing pack sizes, bulk pricing, supplier alternatives, and contract tiers
 - **Manages risk** by flagging low-stock items and suggesting available alternatives before backorders occur
-- **Advances sustainability** by identifying eco-certified alternatives when available
+- **Advances sustainability** by identifying eco-certified alternatives with CO₂ and recycled content data
 - **Consolidates suppliers** to reduce shipping costs and simplify receiving
-- **Learns from patterns** across every transaction to improve future recommendations
+- **Quantifies value** across multiple dimensions: direct savings, maverick spend prevention, stockout avoidance, sustainability impact
 
-The result: procurement teams process RFQs **10x faster**, save **15-25% on average order value**, and maintain **100% contract compliance** — all with an audit trail.
+The result: procurement teams process RFQs **10x faster**, save **15-25% on average order value**, and maintain **100% cooperative contract compliance** — all with an audit trail showing what the agent did and why.
 
 ---
 
 ## Why Now: The Agentic Commerce Shift
 
-The procurement industry is undergoing a fundamental transformation. Three forces are converging:
+The procurement industry is undergoing a fundamental transformation. Four forces are converging:
 
-### 1. AI Agents Are Ready
-Large language models and intelligent automation have reached the point where they can reliably parse unstructured documents, match entities across databases, and make optimization decisions. The technology is no longer experimental — it's production-ready.
+### 1. Data Foundations Are Ready
+Through EIS's work on schema governance, taxonomy optimization, and content enrichment, OMNIA's catalog data is now clean, structured, and enriched enough to power autonomous matching and optimization. This is the prerequisite that was missing — you can't build intelligent procurement on dirty data.
 
-### 2. Procurement Complexity Is Exploding
+### 2. AI Agents Are Ready
+Intelligent automation has reached the point where it can reliably parse unstructured documents, match entities across databases, and make optimization decisions. Combined with enriched, governed data, the technology is production-ready.
+
+### 3. Procurement Complexity Is Exploding
 Supply chain disruptions, sustainability mandates, DEI supplier requirements, and volatile pricing mean procurement teams are drowning in decisions. The old approach of "search and click" doesn't scale when every purchase requires checking 5 different compliance criteria.
 
-### 3. Cooperative Purchasing Is Growing
-Organizations like OMNIA Partners aggregate buying power across thousands of members. But members can only capture value if they can quickly find and purchase the right products on the right contracts. R2C makes that effortless.
+### 4. Cooperative Purchasing Is Growing
+Organizations like OMNIA Partners aggregate buying power across thousands of members serving public sector agencies, K-12 schools, higher education, state/local government, and nonprofits. But members can only capture value if they can quickly find and purchase the right products on the right cooperative contracts. R2C makes that effortless.
 
-**The competitive advantage is clear:** organizations using agentic procurement will outperform those stuck in manual processes — not by small margins, but by orders of magnitude in speed, savings, and compliance.
+**The competitive advantage is clear:** organizations using agentic procurement powered by governed, enriched data will outperform those stuck in manual processes — not by small margins, but by orders of magnitude in speed, savings, and compliance.
 
 ---
 
@@ -109,18 +166,19 @@ Organizations like OMNIA Partners aggregate buying power across thousands of mem
 **What happens:** Each line item is matched against the product catalog using fuzzy matching, synonym detection, and contract-awareness.
 
 **Intelligence applied:**
-- Fuzzy name matching with confidence scoring (exact match, partial match, category match)
-- Contract-first matching: prioritizes products on the buyer's approved contracts
-- Multi-signal ranking: price, availability, supplier reliability, past purchase history
+- BM25-style matching with TF-IDF scoring, trigram fuzzy matching, and synonym expansion
+- UNSPSC-aware category matching using EIS-enriched taxonomy hierarchy
+- Contract-first matching: prioritizes products on OMNIA cooperative master agreements
+- Multi-signal ranking: price, availability, supplier reliability, contract tier, preferred supplier status
 - Flags items that can't be matched above a confidence threshold for human review
 
 **Value displayed:**
 - "42/47 items matched with 95%+ confidence"
-- "All matches are on your STATE-EDU-ABC contract"
+- "All matches verified against OMNIA cooperative master agreements"
 - "3 items need your review — similar products found but names differ"
-- "Estimated order value: $12,450 based on current catalog pricing"
+- "Estimated order value: $12,450 based on current cooperative pricing"
 
-**Why this matters:** Manual catalog searching averages 3-5 minutes per item. For a 50-item RFQ, that's 2.5-4 hours. The agent matches everything in under 10 seconds and catches contract compliance issues immediately.
+**Why this matters:** Manual catalog searching averages 3-5 minutes per item. For a 50-item RFQ, that's 2.5-4 hours. The agent, powered by EIS-enriched catalog data, matches everything in under 10 seconds and catches contract compliance issues immediately.
 
 ---
 
@@ -132,11 +190,11 @@ Organizations like OMNIA Partners aggregate buying power across thousands of mem
 
 | Optimization Type | What the Agent Does | Example |
 |---|---|---|
-| **Pack Size** | Finds bulk packaging that reduces per-unit cost | "Switch from 12-pack to 48-pack, save $0.23/unit (23% savings)" |
-| **Supplier Switch** | Identifies cheaper or better-rated suppliers on contract | "Alternative supplier offers same product at $2.10 vs $2.75" |
-| **Stock Risk** | Flags low-stock items and suggests available alternatives | "Current selection is low stock — equivalent product from Hygiene Plus ships immediately" |
-| **Sustainability** | Recommends eco-certified alternatives when price-competitive | "Eco-friendly option available at only $0.05/unit more — meets your Green Purchasing Policy" |
-| **Consolidation** | Groups items to fewer suppliers for shipping efficiency | "Moving 3 items to CleanPro Supply saves $45 in shipping" |
+| **Pack Size** | Uses variant modeling to find bulk packaging that reduces per-unit cost | "Switch from 12-ct to 48-ct, save 23% per unit" |
+| **Supplier Switch** | Identifies cheaper or better-rated suppliers on cooperative contracts with contract tier awareness | "Better price from Grainger (Tier 1 cooperative supplier) — saves $47 on this line" |
+| **Stock Risk** | Flags low-stock items and suggests available alternatives from the enriched catalog | "Current selection is low stock — equivalent from Global Industrial ships immediately" |
+| **Sustainability** | Recommends eco-certified alternatives using CO₂ data, certifications, and recycled content | "Green Seal, EPA Safer Choice certified at same price — 35% lower carbon footprint" |
+| **Consolidation** | Groups items to fewer preferred suppliers for shipping efficiency | "Moving 3 items to ODP Business Solutions saves $45 in shipping" |
 
 **Value displayed:**
 - "Found $847 in potential savings across 8 swap opportunities"
@@ -264,17 +322,20 @@ R2C is designed to run anywhere:
 ## Roadmap
 
 ### Phase 1: Intelligent Matching (Current)
-- RFQ upload and parsing (CSV, Excel)
-- Product catalog matching with confidence scoring
-- Swap recommendations (price, pack size, stock, sustainability)
-- Order export (PDF, CSV)
+- EIS-enriched catalog with UNSPSC taxonomy, brand/MPN, certifications, CO₂ data
+- BM25 product matching with TF-IDF scoring, trigram fuzzy matching, synonym expansion
+- RFQ upload and parsing (CSV, Excel) with intelligent column detection
+- Swap recommendations using enriched attributes (pack size, certifications, CO₂, contract tiers)
+- Multi-dimensional value metrics (direct savings, maverick spend, stockout avoidance, sustainability)
+- Order export (PDF, CSV) with cooperative contract verification
 - Self-hosted deployment
 
 ### Phase 2: Deep Intelligence
 - Natural language RFQ processing ("I need 200 boxes of cleaning supplies for 3 buildings")
+- RAG-driven product-level insights powered by EIS content enrichment
 - Historical purchase pattern analysis
 - Predictive reorder recommendations
-- Multi-contract optimization
+- Multi-contract optimization across OMNIA cooperative agreements
 - Supplier performance scoring
 
 ### Phase 3: Full Autonomy
@@ -287,9 +348,10 @@ R2C is designed to run anywhere:
 ### Phase 4: Network Intelligence
 - Cross-organization benchmarking ("You're paying 20% more than similar districts")
 - Demand aggregation across cooperative members
-- Supplier negotiation insights
+- Supplier negotiation insights powered by EIS analytics
 - Market trend analysis and forward buying recommendations
+- Content-aware enrichment feedback loop: R2C usage data → EIS governance improvements
 
 ---
 
-*R2C by OPUS (Omnia Partners) — The future of procurement is autonomous.*
+*R2C by EIS × OPUS (OMNIA Partners) — Governed data meets agentic commerce. The future of procurement is autonomous.*

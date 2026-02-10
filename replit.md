@@ -1,12 +1,21 @@
 # Overview
 
-R2C (Requirements 2 Cart) by OPUS/Omnia Partners — an agentic commerce system for procurement that autonomously converts RFQs into optimized purchase orders. The AI agent acts on behalf of procurement officers to parse documents, match products against 6M+ catalog items, enforce contract compliance, optimize costs through swap recommendations, manage stock risks, and advance sustainability goals.
+R2C (Requirements 2 Cart) by EIS × OPUS/OMNIA Partners — an agentic commerce system for procurement that autonomously converts RFQs into optimized purchase orders. Built on EIS's enterprise content foundation (schema governance, taxonomy optimization, content enrichment, search tuning), R2C acts on behalf of procurement officers to parse documents, match products against 7.5M+ enriched catalog items across 630+ cooperative suppliers, enforce cooperative contract compliance, optimize costs through intelligent swap recommendations, manage stock risks, and advance sustainability goals.
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
 
 # System Architecture
+
+## EIS Data Foundation Layer
+
+R2C is powered by EIS's data foundation work for OMNIA's OPUS platform:
+- **Schema Detection & Attribute Mapping**: Unified product model from 630+ supplier feeds using industry standards (Schema.org, GS1, eCl@ss)
+- **Taxonomy Optimization**: UNSPSC classification, category path hierarchy, variant product modeling
+- **Content Enrichment**: Title/description normalization, missing attribute fill, keyword/synonym generation
+- **Search Enhancement**: Elastic config tuning, field weighting, synonym enrichment, faceting optimization
+- **Sustainability Data**: CO₂ per unit, recycled content, certification capture (Green Seal, EPA Safer Choice, etc.)
 
 ## Frontend Architecture
 
@@ -50,6 +59,7 @@ Preferred communication style: Simple, everyday language.
 - RESTful endpoints under `/api` prefix
 - Product catalog endpoints (`/api/products`)
 - Order management endpoints (`/api/orders`)
+- Value metrics endpoint (`/api/orders/:id/value-metrics`) — multi-dimensional value computation
 - Swap recommendation system integrated into order creation
 
 **Data Layer**
@@ -58,20 +68,37 @@ Preferred communication style: Simple, everyday language.
 - Drizzle ORM for type-safe PostgreSQL queries and migrations
 - Schema uses UUIDs for primary keys and JSONB for flexible data structures
 
+**Product Matching Engine (server/matching.ts)**
+- BM25-style scoring with TF-IDF term frequency/inverse document frequency weighting
+- Trigram fuzzy matching for typo tolerance
+- Synonym expansion for common procurement terms
+- UNSPSC-aware category matching using enriched taxonomy hierarchy
+- Name field boost (2x weight) for precision
+- Configurable confidence thresholds
+
 **File Upload & Parsing**
 - CSV file parsing with intelligent column detection
 - Excel file parsing via xlsx library (base64 encoding for binary transfer)
-- Product matching algorithm that maps uploaded items to catalog products
+- Product matching maps uploaded items to enriched catalog products
 - Confidence scoring for match quality
 
 **Swap Recommendation Engine**
 - Priority-based scoring: stock risks (100), bulk savings (80), supplier alternatives (70), eco options (60)
-- Contextual reason generation with specific metrics (e.g., "23% cheaper per unit")
+- Enriched attribute-aware: uses packSize, certifications, co2PerUnit, contractTier, UNSPSC for matching
+- Contextual reason generation with specific metrics and certification details
 - Deduplication via usedAlternatives set to avoid recommending same product twice
 - Types: pack_size, supplier, stock, sustainability
 
+**Value Metrics Engine**
+- Direct cost savings from swap recommendations
+- Maverick spend prevention (estimated 15% off-contract premium avoided)
+- Stockout cost avoidance (rush shipping + downtime estimates)
+- Sustainability metrics: CO₂ reduction, eco items, recycled content, certified products
+- Spend consolidation: supplier count, category count, preferred supplier utilization
+- Total value created aggregation
+
 **Database Schema Design**
-- Products table: catalog items with pricing, supplier, contract, and eco-friendly flags
+- Products table: enriched catalog items with UNSPSC, categoryPath, brand, MPN, packSize, certifications, contractTier, preferredSupplier, co2PerUnit, recycledContent
 - Orders table: tracks upload status, total amounts, and savings with JSONB for raw items data
 - Order Items table: links products to orders with quantities, prices, and swap tracking
 - Swap Recommendations table: stores AI-suggested alternatives with savings calculations and swap types
@@ -87,17 +114,19 @@ Preferred communication style: Simple, everyday language.
 ## Key Files
 
 - `client/src/pages/opus-integrated.tsx` — Main integrated page (storefront + assistant)
-- `client/src/components/opus-storefront.tsx` — Product catalog storefront
+- `client/src/components/opus-storefront.tsx` — Product catalog storefront with real OPUS suppliers
 - `client/src/components/chat-assistant-panel.tsx` — R2C Agent panel wrapper
 - `client/src/components/file-upload.tsx` — File upload with progress intelligence
-- `client/src/components/product-matching.tsx` — Match review with agent actions
+- `client/src/components/product-matching.tsx` — Match review with agent actions and enriched data display
 - `client/src/components/smart-swaps.tsx` — Swap recommendations with agent intelligence
-- `client/src/components/cart-summary.tsx` — Final summary with agent impact dashboard
-- `server/routes.ts` — API routes and swap recommendation generation
+- `client/src/components/cart-summary.tsx` — Final summary with multi-dimensional value dashboard
+- `server/routes.ts` — API routes, swap recommendation generation, value metrics endpoint
+- `server/matching.ts` — BM25-style product matching engine with TF-IDF and synonym expansion
+- `server/seed.ts` — 50-product enriched seed catalog across 6 categories with real OPUS suppliers
 - `server/file-parser.ts` — CSV/Excel parsing and product matching
 - `server/storage.ts` — Database storage abstraction
-- `shared/schema.ts` — Drizzle schema and Zod types
-- `docs/PRD.md` — Product Requirements Document
+- `shared/schema.ts` — Drizzle schema with enriched taxonomy fields and Zod types
+- `docs/PRD.md` — Product Requirements Document with EIS data foundation narrative
 
 ## External Dependencies
 
@@ -122,6 +151,17 @@ Preferred communication style: Simple, everyday language.
 - jspdf and jspdf-autotable for PDF generation
 
 # Recent Changes
+
+**February 2026 - EIS Data Foundation & Multi-Dimensional Value**
+- Added EIS data foundation narrative to PRD documenting schema governance, taxonomy optimization, content enrichment, and search tuning as the foundation enabling R2C
+- Enhanced product schema with enriched taxonomy fields: UNSPSC codes, categoryPath hierarchy, brand, MPN, packSize, certifications, contractTier, preferredSupplier, co2PerUnit, recycledContent
+- Expanded seed catalog to 50 products across 6 categories using real OPUS cooperative suppliers (Grainger, ODP Business Solutions, Quill, Global Industrial, MSC Industrial, Medline, Lawson Products, Network Distribution, Safeware)
+- Built BM25-style matching engine (server/matching.ts) with TF-IDF scoring, trigram fuzzy matching, and synonym expansion for procurement terms
+- Upgraded swap engine to use enriched product attributes: UNSPSC matching, packSize-aware bulk comparisons, certification-rich sustainability reasons, contract tier notes
+- Added value metrics API endpoint computing direct savings, maverick spend prevention, stockout cost avoidance, sustainability impact (CO₂ reduction), and spend consolidation
+- Enhanced cart summary with multi-dimensional value dashboard showing all value dimensions
+- Updated all messaging to reference "cooperative master agreements", "630+ cooperative suppliers", "7.5M+ enriched catalog items"
+- Updated stats, suppliers, contract formats (OMNIA R-XXXXX), and target user messaging to align with real OPUS platform
 
 **February 2026 - Agentic Commerce Intelligence**
 - Upgraded swap recommendation engine with priority-based reasoning and contextual explanations

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ShoppingCart, RotateCcw, Download, FileText, FileSpreadsheet, TrendingDown, Clock, ShieldCheck, Leaf, Zap } from "lucide-react";
+import { ArrowLeft, ShoppingCart, RotateCcw, Download, FileText, FileSpreadsheet, TrendingDown, Clock, ShieldCheck, Leaf, Zap, AlertTriangle, Users, Award, BarChart3 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Product } from "@shared/schema";
 import jsPDF from 'jspdf';
@@ -14,11 +14,28 @@ interface CartSummaryProps {
   onSubmit: () => void;
   isSubmitting: boolean;
   elapsedTime?: number;
+  orderId?: string;
 }
 
-export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitting, elapsedTime }: CartSummaryProps) {
+interface ValueMetrics {
+  directSavings: number;
+  maverickSpendAvoided: number;
+  stockoutCostAvoided: number;
+  contractCompliance: { compliantCount: number; totalCount: number; rate: number };
+  sustainability: { co2ReductionKg: number; ecoItemCount: number; ecoSwapsAvailable: number; ecoSwapsAccepted: number; avgRecycledContent: number; certifiedItemCount: number };
+  spendConsolidation: { supplierCount: number; categoryCount: number; preferredSupplierCount: number };
+  swapSummary: { total: number; accepted: number; totalPotentialSavings: number; realizedSavings: number };
+  totalValueCreated: number;
+}
+
+export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitting, elapsedTime, orderId }: CartSummaryProps) {
   const { data: products } = useQuery<Product[]>({
     queryKey: ['/api/products']
+  });
+
+  const { data: valueMetrics } = useQuery<ValueMetrics>({
+    queryKey: ['/api/orders', orderId, 'value-metrics'],
+    enabled: !!orderId
   });
 
   const getProduct = (productId: string) => products?.find(p => p.id === productId);
@@ -92,7 +109,7 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
     doc.text('OPUS', 14, 20);
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text('by Omnia Partners', 14, 26);
+    doc.text('by OMNIA Partners', 14, 26);
     doc.setFontSize(16);
     doc.setTextColor(0);
     doc.text('Purchase Order', 14, 40);
@@ -179,8 +196,8 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
           </div>
           <div className="bg-white/80 rounded-lg p-1.5 border border-white">
             <ShieldCheck className="w-3.5 h-3.5 mx-auto text-purple-600 mb-0.5" />
-            <div className="text-xs font-bold text-gray-900">100%</div>
-            <div className="text-[8px] sm:text-[9px] text-gray-500">compliant</div>
+            <div className="text-xs font-bold text-gray-900">{valueMetrics?.contractCompliance.rate ?? 100}%</div>
+            <div className="text-[8px] sm:text-[9px] text-gray-500">cooperative compliant</div>
           </div>
           <div className="bg-white/80 rounded-lg p-1.5 border border-white">
             <Leaf className="w-3.5 h-3.5 mx-auto text-green-600 mb-0.5" />
@@ -189,6 +206,71 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
           </div>
         </div>
       </div>
+
+      {valueMetrics && (
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-2.5">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <BarChart3 className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="text-xs font-semibold text-indigo-800">Multi-Dimensional Value</span>
+          </div>
+          <div className="space-y-1.5 text-[10px] sm:text-[11px]">
+            {valueMetrics.directSavings > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1 text-gray-700">
+                  <TrendingDown className="w-3 h-3 text-green-500" />
+                  Direct cost savings
+                </span>
+                <span className="font-bold text-green-700">${valueMetrics.directSavings.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1 text-gray-700">
+                <ShieldCheck className="w-3 h-3 text-purple-500" />
+                Maverick spend avoided
+              </span>
+              <span className="font-bold text-purple-700">${valueMetrics.maverickSpendAvoided.toFixed(0)}</span>
+            </div>
+            {valueMetrics.stockoutCostAvoided > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1 text-gray-700">
+                  <AlertTriangle className="w-3 h-3 text-amber-500" />
+                  Stockout cost avoidance
+                </span>
+                <span className="font-bold text-amber-700">${valueMetrics.stockoutCostAvoided.toFixed(0)}</span>
+              </div>
+            )}
+            {valueMetrics.sustainability.co2ReductionKg > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1 text-gray-700">
+                  <Leaf className="w-3 h-3 text-green-500" />
+                  CO₂ reduction
+                </span>
+                <span className="font-bold text-green-700">{valueMetrics.sustainability.co2ReductionKg} kg</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1 text-gray-700">
+                <Users className="w-3 h-3 text-blue-500" />
+                Supplier consolidation
+              </span>
+              <span className="font-bold text-blue-700">{valueMetrics.spendConsolidation.supplierCount} suppliers / {valueMetrics.spendConsolidation.categoryCount} categories</span>
+            </div>
+            {valueMetrics.sustainability.certifiedItemCount > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1 text-gray-700">
+                  <Award className="w-3 h-3 text-indigo-500" />
+                  Certified products
+                </span>
+                <span className="font-bold text-indigo-700">{valueMetrics.sustainability.certifiedItemCount}/{items.length} items</span>
+              </div>
+            )}
+            <div className="pt-1 mt-1 border-t border-indigo-200 flex items-center justify-between">
+              <span className="font-semibold text-indigo-900">Total value created</span>
+              <span className="font-bold text-indigo-900 text-xs">${valueMetrics.totalValueCreated.toFixed(0)}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2">
         {totalSavings > 0 && (
@@ -228,7 +310,7 @@ export default function CartSummary({ items, swaps, onBack, onSubmit, isSubmitti
                       )}
                     </div>
                     <p className="text-[10px] text-gray-500">
-                      {item.quantity} {product.unitOfMeasure} @ ${parseFloat(product.unitPrice).toFixed(2)}
+                      {item.quantity} {product.unitOfMeasure} @ ${parseFloat(product.unitPrice).toFixed(2)} — {product.supplier}
                     </p>
                   </div>
                   <span className="font-mono font-semibold text-gray-900 text-[11px] sm:text-sm shrink-0">${lineTotal.toFixed(2)}</span>

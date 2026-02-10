@@ -288,6 +288,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                   onSubmit={handleSubmitOrder}
                   isSubmitting={submitOrderMutation.isPending}
                   elapsedTime={elapsedTime}
+                  orderId={orderId || undefined}
                 />
               )}
             </div>
@@ -349,7 +350,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 <div className="bg-white rounded-lg p-2 border">
                   <TrendingDown className="w-4 h-4 mx-auto text-green-600 mb-1" />
                   <div className="text-xs font-bold text-gray-900">~18%</div>
-                  <div className="text-[10px] text-gray-500">Savings</div>
+                  <div className="text-[10px] text-gray-500">Cost Savings</div>
                 </div>
                 <div className="bg-white rounded-lg p-2 border">
                   <ShieldCheck className="w-4 h-4 mx-auto text-purple-600 mb-1" />
@@ -358,7 +359,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 </div>
               </div>
               <div className="text-[11px] text-gray-500 text-center italic">
-                All items verified against publicly awarded cooperative contracts
+                All items matched via enriched catalog data and verified against publicly awarded cooperative contracts
               </div>
             </div>
             <div className="flex gap-3">
