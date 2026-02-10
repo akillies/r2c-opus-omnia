@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Minimize2, Maximize2, Bot, Sparkles, MessageSquare, ChevronLeft, Clock, TrendingDown, ShieldCheck, Leaf, Expand, Shrink } from "lucide-react";
+import { X, Minimize2, Maximize2, Bot, Sparkles, MessageSquare, ChevronLeft, Clock, TrendingDown, ShieldCheck, Leaf, Expand, Shrink, FileUp, Search, Zap, Check, CircleCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -184,11 +184,12 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
     return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
   };
 
+  const stepIcons = [FileUp, Search, Zap, CircleCheck];
   const steps = [
-    { label: 'Upload', icon: '📄', desc: 'Parse RFQ' },
-    { label: 'Match', icon: '🔍', desc: 'Find products' },
-    { label: 'Optimize', icon: '⚡', desc: 'Find savings' },
-    { label: 'Finalize', icon: '✅', desc: 'Submit PO' },
+    { label: 'Upload', desc: 'Parse RFQ' },
+    { label: 'Match', desc: 'Find products' },
+    { label: 'Optimize', desc: 'Find savings' },
+    { label: 'Finalize', desc: 'Submit PO' },
   ];
 
   if (!isOpen) return null;
@@ -285,12 +286,15 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                 {steps.map((step, index) => (
                   <div key={step.label} className="flex items-center flex-1">
                     <div className="flex flex-col items-center flex-1">
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${
                         index < currentStep ? 'bg-green-500 text-white shadow-sm shadow-green-200' :
                         index === currentStep ? 'bg-[#1e3a5f] text-white shadow-sm shadow-blue-200 scale-110' : 
                         'bg-gray-100 text-gray-400'
                       }`}>
-                        {index < currentStep ? '✓' : step.icon}
+                        {index < currentStep
+                          ? <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                          : (() => { const Icon = stepIcons[index]; return <Icon className="w-3.5 h-3.5" />; })()
+                        }
                       </div>
                       <span className={`text-[10px] mt-0.5 font-medium hidden sm:block ${
                         index <= currentStep ? 'text-[#1e3a5f]' : 'text-gray-400'
@@ -371,14 +375,17 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
             {steps.map((step, index) => (
               <div
                 key={step.label}
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                   index < currentStep ? 'bg-green-500 text-white' :
                   index === currentStep ? 'bg-[#1e3a5f] text-white scale-110' :
                   'bg-gray-100 text-gray-400'
                 }`}
                 title={step.label}
               >
-                {index < currentStep ? '✓' : step.icon}
+                {index < currentStep
+                  ? <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                  : (() => { const Icon = stepIcons[index]; return <Icon className="w-3.5 h-3.5" />; })()
+                }
               </div>
             ))}
           </div>

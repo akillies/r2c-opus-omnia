@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, ShoppingCart, User, Menu, ChevronDown, Star, Truck, Shield, Plus, Heart, Bell, HelpCircle, X, Bot } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, ChevronDown, Star, Truck, Shield, Plus, Heart, Bell, HelpCircle, X, Bot, SprayCan, Paintbrush, FileText, Hand, Coffee, Trash2, Lightbulb, Cross, Leaf, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,7 @@ const featuredProducts = [
     brand: "Diversey",
     price: "18.50",
     originalPrice: "22.00",
-    image: "🧴",
+    icon: SprayCan,
     rating: 4.8,
     reviews: 124,
     contract: "OMNIA R-GR-JC-20001",
@@ -33,7 +33,7 @@ const featuredProducts = [
     supplier: "Network Distribution",
     brand: "Rubbermaid",
     price: "24.99",
-    image: "🧹",
+    icon: Paintbrush,
     rating: 4.6,
     reviews: 89,
     contract: "OMNIA R-ND-JC-20003",
@@ -46,7 +46,7 @@ const featuredProducts = [
     supplier: "ODP Business Solutions",
     brand: "GP Pro",
     price: "42.00",
-    image: "📄",
+    icon: FileText,
     rating: 4.9,
     reviews: 312,
     contract: "OMNIA R-OD-OS-20010",
@@ -59,7 +59,7 @@ const featuredProducts = [
     supplier: "Medline",
     brand: "Medline",
     price: "14.99",
-    image: "🧤",
+    icon: Hand,
     rating: 4.7,
     reviews: 256,
     contract: "OMNIA R-MM-NR-20005",
@@ -72,7 +72,7 @@ const featuredProducts = [
     supplier: "ODP Business Solutions",
     brand: "Dart",
     price: "58.00",
-    image: "☕",
+    icon: Coffee,
     rating: 4.4,
     reviews: 67,
     contract: "OMNIA R-OD-BF-20011",
@@ -85,7 +85,7 @@ const featuredProducts = [
     supplier: "Global Industrial",
     brand: "Heritage",
     price: "45.00",
-    image: "🗑️",
+    icon: Trash2,
     rating: 4.5,
     reviews: 178,
     contract: "OMNIA R-GI-JC-20004",
@@ -99,7 +99,7 @@ const featuredProducts = [
     supplier: "Grainger",
     brand: "Philips",
     price: "8.99",
-    image: "💡",
+    icon: Lightbulb,
     rating: 4.3,
     reviews: 95,
     contract: "OMNIA R-GR-FM-20008",
@@ -113,7 +113,7 @@ const featuredProducts = [
     supplier: "Safeware",
     brand: "First Aid Only",
     price: "89.99",
-    image: "🏥",
+    icon: Cross,
     rating: 4.8,
     reviews: 42,
     contract: "OMNIA R-SW-SP-20007",
@@ -350,8 +350,8 @@ export default function OpusStorefront({ cartItemCount, onOpenAssistant, highlig
                   </button>
 
                   <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3">
-                    <div className={`text-2xl sm:text-3xl transition-transform duration-200 ${isHovered ? 'scale-110' : ''} self-center sm:self-start`}>
-                      {product.image}
+                    <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-slate-100 flex items-center justify-center transition-transform duration-200 ${isHovered ? 'scale-110' : ''} self-center sm:self-start shrink-0`}>
+                      <product.icon className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-500" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-gray-900 text-[11px] sm:text-xs leading-tight line-clamp-2 mb-0.5 sm:mb-1">{product.name}</h4>
@@ -392,7 +392,7 @@ export default function OpusStorefront({ cartItemCount, onOpenAssistant, highlig
                         {product.isEco && (
                           <>
                             <span className="text-gray-300">|</span>
-                            <span className="text-green-600 font-medium">🌱</span>
+                            <Leaf className="w-3 h-3 text-green-600" />
                           </>
                         )}
                       </div>
@@ -410,7 +410,7 @@ export default function OpusStorefront({ cartItemCount, onOpenAssistant, highlig
                         data-testid={`button-add-cart-${product.id}`}
                       >
                         {isInCart ? (
-                          <>✓ Added</>
+                          <><Check className="w-3 h-3 mr-1" /> Added</>
                         ) : (
                           <><Plus className="w-3 h-3 mr-1" /> Add to Cart</>
                         )}
