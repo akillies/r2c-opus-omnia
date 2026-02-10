@@ -72,16 +72,15 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
     let finalTotal = 0;
     
     items.forEach(item => {
-      const originalProduct = getProduct(item.originalProductId || item.productId);
-      const currentProduct = getProduct(item.productId);
-      
-      if (originalProduct && currentProduct) {
-        originalTotal += parseFloat(originalProduct.unitPrice) * item.quantity;
-        finalTotal += parseFloat(currentProduct.unitPrice) * item.quantity;
+      const currentPrice = parseFloat(item.unitPrice || "0");
+      finalTotal += currentPrice * item.quantity;
+
+      if (item.originalProductId && item.originalProductId !== item.productId) {
+        const originalProduct = getProduct(item.originalProductId);
+        const origPrice = originalProduct ? parseFloat(originalProduct.unitPrice) : currentPrice;
+        originalTotal += origPrice * item.quantity;
       } else {
-        const fallbackPrice = parseFloat(item.unitPrice || "0") * item.quantity;
-        originalTotal += fallbackPrice;
-        finalTotal += fallbackPrice;
+        originalTotal += currentPrice * item.quantity;
       }
     });
 
@@ -123,11 +122,11 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
     const headers = ['Product Name', 'Quantity', 'Unit', 'Supplier', 'Contract', 'Unit Price', 'Line Total', 'Swapped'];
     const rows = items.map(item => {
       const product = getProduct(item.productId);
-      if (!product) return null;
       const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
-      const lineTotal = parseFloat(product.unitPrice) * item.quantity;
-      return [product.name, item.quantity, product.unitOfMeasure, product.supplier, product.contract, `$${parseFloat(product.unitPrice).toFixed(2)}`, `$${lineTotal.toFixed(2)}`, swap ? 'Yes' : 'No'];
-    }).filter(Boolean);
+      const price = parseFloat(item.unitPrice || product?.unitPrice || "0");
+      const lineTotal = price * item.quantity;
+      return [product?.name || `Product ${item.productId}`, item.quantity, product?.unitOfMeasure || 'EA', product?.supplier || '', product?.contract || '', `$${price.toFixed(2)}`, `$${lineTotal.toFixed(2)}`, swap ? 'Yes' : 'No'];
+    });
 
     rows.push(['', '', '', '', '', '', '', '']);
     rows.push(['', '', '', '', '', 'Subtotal:', `$${finalTotal.toFixed(2)}`, '']);
@@ -164,11 +163,11 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
 
     const tableData = items.map(item => {
       const product = getProduct(item.productId);
-      if (!product) return null;
       const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
-      const lineTotal = parseFloat(product.unitPrice) * item.quantity;
-      return [product.name, item.quantity.toString(), product.unitOfMeasure, product.supplier, `$${parseFloat(product.unitPrice).toFixed(2)}`, `$${lineTotal.toFixed(2)}`, swap ? 'Yes' : 'No'];
-    }).filter(Boolean);
+      const price = parseFloat(item.unitPrice || product?.unitPrice || "0");
+      const lineTotal = price * item.quantity;
+      return [product?.name || `Product ${item.productId}`, item.quantity.toString(), product?.unitOfMeasure || 'EA', product?.supplier || '', `$${price.toFixed(2)}`, `$${lineTotal.toFixed(2)}`, swap ? 'Yes' : 'No'];
+    });
 
     autoTable(doc, {
       startY: 62,
@@ -430,7 +429,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                 {items.map((item, index) => {
                   const product = getProduct(item.productId);
                   const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
-                  const unitPrice = product ? parseFloat(product.unitPrice) : parseFloat(item.unitPrice || "0");
+                  const unitPrice = parseFloat(item.unitPrice || "0");
                   const lineTotal = unitPrice * item.quantity;
                   return (
                     <tr key={index} className="hover:bg-gray-50/50 transition-colors" data-testid={`cart-item-${index}`}>
@@ -462,7 +461,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
             items.map((item, index) => {
               const product = getProduct(item.productId);
               const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
-              const unitPrice = product ? parseFloat(product.unitPrice) : parseFloat(item.unitPrice || "0");
+              const unitPrice = parseFloat(item.unitPrice || "0");
               const lineTotal = unitPrice * item.quantity;
               const displayName = product?.name || `Product ${item.productId}`;
               const displaySupplier = product?.supplier || '';
@@ -611,7 +610,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-[10px] font-mono font-semibold text-gray-900">${(parseFloat(product.unitPrice) * item.quantity).toFixed(2)}</div>
+                      <div className="text-[10px] font-mono font-semibold text-gray-900">${(parseFloat(item.unitPrice || product.unitPrice) * item.quantity).toFixed(2)}</div>
                       <div className="text-[8px] text-gray-400">Qty {item.quantity}</div>
                     </div>
                   </div>

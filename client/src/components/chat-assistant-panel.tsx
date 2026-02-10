@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { X, Minimize2, Maximize2, Bot, Sparkles, MessageSquare, ChevronLeft, Clock, TrendingDown, ShieldCheck, Leaf, Expand, Shrink, FileUp, Search, Zap, Check, CircleCheck } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, Minimize2, Maximize2, Bot, Sparkles, MessageSquare, ChevronLeft, Clock, TrendingDown, ShieldCheck, Leaf, Expand, Shrink, FileUp, Search, Zap, Check, CircleCheck, Send, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -11,6 +11,13 @@ import CartSummary from "./cart-summary";
 import ComparisonDrawer from "./comparison-drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CheckCircle2 } from "lucide-react";
+
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
 
 interface ChatAssistantPanelProps {
   isOpen: boolean;
@@ -52,6 +59,11 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [matchMeta, setMatchMeta] = useState<MatchedItemMeta[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -158,9 +170,90 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
     setStartTime(null);
     setElapsedTime(0);
     setMatchMeta([]);
+    setChatMessages([]);
+    setChatInput("");
     onCartUpdate(0);
     onHighlightProducts([]);
     queryClient.clear();
+  };
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  const generateResponse = (userMessage: string): string => {
+    const msg = userMessage.toLowerCase();
+    const itemCount = orderData?.items?.length || 0;
+    const swapCount = orderData?.swaps?.length || 0;
+    const acceptedCount = orderData?.swaps?.filter((s: any) => s.isAccepted).length || 0;
+
+    if (msg.includes('how many') && (msg.includes('item') || msg.includes('product'))) {
+      return `Your current order has ${itemCount} line items matched from the uploaded RFQ, sourced across ${new Set(orderData?.items?.map((i: any) => i.productId).filter(Boolean)).size} unique products from cooperative suppliers.`;
+    }
+    if (msg.includes('swap') || msg.includes('recommendation') || msg.includes('optimization')) {
+      if (currentStep < 2) return `I've identified swap opportunities for your order. Move to the Optimize step to review ${swapCount} recommendations covering stock risks, bulk savings, and sustainability upgrades.`;
+      return `There are ${swapCount} swap recommendations for this order. ${acceptedCount} have been accepted so far. These include stock risk mitigations, bulk format savings, supplier alternatives, and sustainability upgrades.`;
+    }
+    if (msg.includes('saving') || msg.includes('cost') || msg.includes('price') || msg.includes('total') || msg.includes('amount')) {
+      if (!orderData) return `Upload an RFQ first and I'll calculate your optimized totals with savings from cooperative pricing, bulk formats, and supplier alternatives.`;
+      let total = 0;
+      orderData.items?.forEach((item: any) => { total += parseFloat(item.unitPrice || "0") * item.quantity; });
+      return `Your current order total is $${total.toFixed(2)} across ${itemCount} items. ${acceptedCount > 0 ? `With ${acceptedCount} optimizations applied, you're saving through cooperative contract pricing, bulk formats, and smarter supplier selection.` : 'Review swap recommendations in the Optimize step to find potential savings.'}`;
+    }
+    if (msg.includes('supplier') || msg.includes('vendor')) {
+      const suppliers = new Set(orderData?.items?.map((i: any) => i.productId).filter(Boolean));
+      return `Your order spans products from multiple cooperative suppliers across the OPUS network. All items are sourced under OMNIA Partners master agreements from 630+ approved suppliers, ensuring competitive pricing and compliance.`;
+    }
+    if (msg.includes('compliance') || msg.includes('contract') || msg.includes('compliant')) {
+      return `All items in your order are verified against OMNIA Partners cooperative master agreements. R2C automatically ensures contract compliance, approved vendor lists, and regulatory requirements are met for every line item.`;
+    }
+    if (msg.includes('sustainability') || msg.includes('eco') || msg.includes('green') || msg.includes('carbon')) {
+      return `R2C evaluates sustainability across every product — tracking certifications (Green Seal, EPA Safer Choice), CO₂ per unit, and recycled content. Eco swap recommendations are available in the Optimize step to advance your green purchasing goals.`;
+    }
+    if (msg.includes('export') || msg.includes('download') || msg.includes('pdf') || msg.includes('csv')) {
+      return `You can export your finalized order as PDF or CSV from the Finalize step. The export includes all line items, suppliers, contract references, quantities, and pricing — ready for your procurement system or approval workflow.`;
+    }
+    if (msg.includes('help') || msg.includes('what can you do') || msg.includes('how does')) {
+      return `I'm your R2C procurement agent. I can:\n• Parse RFQ documents (CSV/Excel) and match items to our catalog\n• Find cost-saving swap recommendations\n• Verify contract compliance across all items\n• Track sustainability metrics and certifications\n• Generate purchase orders with full audit trails\n\nJust upload an RFQ to get started, or ask me about your current order.`;
+    }
+    if (msg.includes('status') || msg.includes('where') || msg.includes('step')) {
+      const stepNames = ['Upload', 'Match', 'Optimize', 'Finalize'];
+      return `You're currently on the ${stepNames[currentStep]} step (${currentStep + 1} of 4).${currentStep === 0 ? ' Upload an RFQ document or try the demo to get started.' : currentStep === 1 ? ' Review matched products and continue to optimization.' : currentStep === 2 ? ' Review and accept swap recommendations, then finalize.' : ' Review your optimized order and submit the purchase order.'}`;
+    }
+    if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) {
+      return `Hello! I'm your R2C procurement agent, powered by VIA-enriched data. ${orderId ? `I see you have an active order with ${itemCount} items. How can I help?` : 'Upload an RFQ document and I\'ll match products, find savings, and prepare an optimized purchase order for you.'}`;
+    }
+    if (orderId) {
+      return `I understand you're asking about "${userMessage}". Based on your current order with ${itemCount} items, I can help with pricing details, swap recommendations, compliance verification, sustainability metrics, or export options. What would you like to know more about?`;
+    }
+    return `I'm ready to help with your procurement needs. Upload an RFQ document to get started, or ask me about cooperative suppliers, compliance, sustainability, or how R2C works.`;
+  };
+
+  const handleChatSubmit = () => {
+    const message = chatInput.trim();
+    if (!message) return;
+
+    const userMsg: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      role: 'user',
+      content: message,
+      timestamp: new Date()
+    };
+    setChatMessages(prev => [...prev, userMsg]);
+    setChatInput("");
+    setIsTyping(true);
+
+    setTimeout(() => {
+      const response = generateResponse(message);
+      const assistantMsg: ChatMessage = {
+        id: `msg-${Date.now()}-reply`,
+        role: 'assistant',
+        content: response,
+        timestamp: new Date()
+      };
+      setChatMessages(prev => [...prev, assistantMsg]);
+      setIsTyping(false);
+    }, 600 + Math.random() * 800);
   };
 
   function getDemoMatchMeta(): MatchedItemMeta[] {
@@ -403,13 +496,77 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
         )}
 
         {!isMinimized && (
-          <div className="shrink-0 px-3 py-1.5 border-t border-gray-100 flex items-center justify-between">
-            <a href="https://www.earley.com" target="_blank" rel="noopener noreferrer" className="text-[9px] text-gray-300 hover:text-gray-400 transition-colors" data-testid="link-earley">
-              earley.com
-            </a>
-            <span className="text-[9px] text-gray-200 select-none" data-testid="text-credit">
-              Conceived by Alexander Kline, AI Innovation Architect
-            </span>
+          <div className="shrink-0 border-t border-gray-200">
+            {chatMessages.length > 0 && (
+              <div className="max-h-[200px] overflow-y-auto px-3 py-2 space-y-2 bg-gray-50/50">
+                {chatMessages.map(msg => (
+                  <div key={msg.id} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`} data-testid={`chat-message-${msg.id}`}>
+                    {msg.role === 'assistant' && (
+                      <div className="w-5 h-5 rounded-full bg-[#1e3a5f] flex items-center justify-center shrink-0 mt-0.5">
+                        <Bot className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                    <div className={`max-w-[85%] rounded-lg px-2.5 py-1.5 text-[11px] leading-relaxed whitespace-pre-line ${
+                      msg.role === 'user'
+                        ? 'bg-[#1e3a5f] text-white rounded-br-sm'
+                        : 'bg-white border border-gray-200 text-gray-700 rounded-bl-sm shadow-sm'
+                    }`}>
+                      {msg.content}
+                    </div>
+                    {msg.role === 'user' && (
+                      <div className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center shrink-0 mt-0.5">
+                        <User className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {isTyping && (
+                  <div className="flex gap-2 justify-start">
+                    <div className="w-5 h-5 rounded-full bg-[#1e3a5f] flex items-center justify-center shrink-0 mt-0.5">
+                      <Bot className="w-3 h-3 text-white" />
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-lg rounded-bl-sm px-3 py-2 shadow-sm">
+                      <div className="flex gap-1">
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+            )}
+            <div className="px-3 py-2 bg-white">
+              <div className="flex items-center gap-2">
+                <input
+                  ref={chatInputRef}
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSubmit(); } }}
+                  placeholder="Ask R2C about your order..."
+                  className="flex-1 text-xs bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]/40 placeholder:text-gray-400"
+                  data-testid="input-chat"
+                />
+                <button
+                  onClick={handleChatSubmit}
+                  disabled={!chatInput.trim() || isTyping}
+                  className="w-8 h-8 rounded-lg bg-[#1e3a5f] text-white flex items-center justify-center hover:bg-[#2d5a87] transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                  data-testid="button-chat-send"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <a href="https://www.earley.com" target="_blank" rel="noopener noreferrer" className="text-[8px] text-gray-300 hover:text-gray-400 transition-colors" data-testid="link-earley">
+                  earley.com
+                </a>
+                <span className="text-[8px] text-gray-200 select-none" data-testid="text-credit">
+                  Conceived by Alexander Kline, AI Innovation Architect
+                </span>
+              </div>
+            </div>
           </div>
         )}
       </div>
