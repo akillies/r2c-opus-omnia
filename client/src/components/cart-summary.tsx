@@ -67,12 +67,20 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
     return swaps.find(swap => swap.originalProductId === productId && swap.isAccepted);
   };
 
+  const getItemPrice = (item: any): number => {
+    const storedPrice = parseFloat(item.unitPrice || "0");
+    if (storedPrice > 0) return storedPrice;
+    const product = getProduct(item.productId);
+    if (product) return parseFloat(product.unitPrice);
+    return 0;
+  };
+
   const calculateTotals = () => {
     let originalTotal = 0;
     let finalTotal = 0;
     
     items.forEach(item => {
-      const currentPrice = parseFloat(item.unitPrice || "0");
+      const currentPrice = getItemPrice(item);
       finalTotal += currentPrice * item.quantity;
 
       if (item.originalProductId && item.originalProductId !== item.productId) {
@@ -123,7 +131,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
     const rows = items.map(item => {
       const product = getProduct(item.productId);
       const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
-      const price = parseFloat(item.unitPrice || product?.unitPrice || "0");
+      const price = getItemPrice(item);
       const lineTotal = price * item.quantity;
       return [product?.name || `Product ${item.productId}`, item.quantity, product?.unitOfMeasure || 'EA', product?.supplier || '', product?.contract || '', `$${price.toFixed(2)}`, `$${lineTotal.toFixed(2)}`, swap ? 'Yes' : 'No'];
     });
@@ -164,7 +172,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
     const tableData = items.map(item => {
       const product = getProduct(item.productId);
       const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
-      const price = parseFloat(item.unitPrice || product?.unitPrice || "0");
+      const price = getItemPrice(item);
       const lineTotal = price * item.quantity;
       return [product?.name || `Product ${item.productId}`, item.quantity.toString(), product?.unitOfMeasure || 'EA', product?.supplier || '', `$${price.toFixed(2)}`, `$${lineTotal.toFixed(2)}`, swap ? 'Yes' : 'No'];
     });
@@ -429,7 +437,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                 {items.map((item, index) => {
                   const product = getProduct(item.productId);
                   const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
-                  const unitPrice = parseFloat(item.unitPrice || "0");
+                  const unitPrice = getItemPrice(item);
                   const lineTotal = unitPrice * item.quantity;
                   return (
                     <tr key={index} className="hover:bg-gray-50/50 transition-colors" data-testid={`cart-item-${index}`}>
@@ -461,7 +469,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
             items.map((item, index) => {
               const product = getProduct(item.productId);
               const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
-              const unitPrice = parseFloat(item.unitPrice || "0");
+              const unitPrice = getItemPrice(item);
               const lineTotal = unitPrice * item.quantity;
               const displayName = product?.name || `Product ${item.productId}`;
               const displaySupplier = product?.supplier || '';
@@ -610,7 +618,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-[10px] font-mono font-semibold text-gray-900">${(parseFloat(item.unitPrice || product.unitPrice) * item.quantity).toFixed(2)}</div>
+                      <div className="text-[10px] font-mono font-semibold text-gray-900">${(getItemPrice(item) * item.quantity).toFixed(2)}</div>
                       <div className="text-[8px] text-gray-400">Qty {item.quantity}</div>
                     </div>
                   </div>

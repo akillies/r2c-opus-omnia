@@ -68,19 +68,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let orderItems = [];
 
       if (matchedItems && matchedItems.length > 0) {
+        let totalAmount = 0;
         for (const match of matchedItems) {
           if (match.matchedProduct) {
+            const price = match.matchedProduct.unitPrice || "0";
+            totalAmount += parseFloat(price) * (match.quantity || 1);
             const orderItem = await storage.createOrderItem({
               orderId: order.id,
               productId: match.matchedProduct.id,
               quantity: match.quantity || 1,
-              unitPrice: match.matchedProduct.unitPrice,
+              unitPrice: price,
               confidence: match.confidence || "0.85",
               isSwapped: false
             });
             orderItems.push(orderItem);
           }
         }
+        await storage.updateOrder(order.id, { totalAmount: totalAmount.toFixed(2) });
       } else {
         const sampleItemDefs = [
           { productId: "prod-01", quantity: 12, confidence: "0.94" },
