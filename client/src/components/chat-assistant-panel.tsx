@@ -133,6 +133,60 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
     }
   });
 
+  const rejectSwapMutation = useMutation({
+    mutationFn: async ({ swapId }: { swapId: string }) => {
+      const response = await apiRequest("POST", `/api/orders/${orderId}/swaps/${swapId}/reject`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      refetchOrder();
+      toast({ title: "Swap Declined", description: "The recommendation has been declined." });
+    }
+  });
+
+  const revertSwapMutation = useMutation({
+    mutationFn: async ({ swapId }: { swapId: string }) => {
+      const response = await apiRequest("POST", `/api/orders/${orderId}/swaps/${swapId}/revert`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      refetchOrder();
+      toast({ title: "Swap Reverted", description: "The item has been reverted to the original product." });
+    }
+  });
+
+  const updateQuantityMutation = useMutation({
+    mutationFn: async ({ itemId, quantity }: { itemId: string; quantity: number }) => {
+      const response = await apiRequest("PATCH", `/api/orders/${orderId}/items/${itemId}`, { quantity });
+      return await response.json();
+    },
+    onSuccess: () => {
+      refetchOrder();
+    }
+  });
+
+  const removeItemMutation = useMutation({
+    mutationFn: async ({ itemId }: { itemId: string }) => {
+      const response = await apiRequest("DELETE", `/api/orders/${orderId}/items/${itemId}`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      refetchOrder();
+      toast({ title: "Item Removed", description: "The item has been removed from your order." });
+    }
+  });
+
+  const selectAlternativeMutation = useMutation({
+    mutationFn: async ({ swapId, alternativeProductId }: { swapId: string; alternativeProductId: string }) => {
+      const response = await apiRequest("POST", `/api/orders/${orderId}/swaps/${swapId}/select-alternative`, { alternativeProductId });
+      return await response.json();
+    },
+    onSuccess: () => {
+      refetchOrder();
+      toast({ title: "Alternative Selected", description: "Your chosen product has been applied to the order." });
+    }
+  });
+
   const submitOrderMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", `/api/orders/${orderId}/submit`);
@@ -151,6 +205,26 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
 
   const handleAcceptSwap = (swapId: string) => {
     acceptSwapMutation.mutate({ swapId });
+  };
+
+  const handleRejectSwap = (swapId: string) => {
+    rejectSwapMutation.mutate({ swapId });
+  };
+
+  const handleRevertSwap = (swapId: string) => {
+    revertSwapMutation.mutate({ swapId });
+  };
+
+  const handleUpdateQuantity = (itemId: string, quantity: number) => {
+    updateQuantityMutation.mutate({ itemId, quantity });
+  };
+
+  const handleRemoveItem = (itemId: string) => {
+    removeItemMutation.mutate({ itemId });
+  };
+
+  const handleSelectAlternative = (swapId: string, alternativeProductId: string) => {
+    selectAlternativeMutation.mutate({ swapId, alternativeProductId });
   };
 
   const handleOpenComparison = (swap: any) => {
@@ -449,8 +523,10 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                   onBack={() => setCurrentStep(1)}
                   onNext={() => setCurrentStep(3)}
                   onAcceptSwap={handleAcceptSwap}
+                  onRejectSwap={handleRejectSwap}
+                  onRevertSwap={handleRevertSwap}
                   onOpenComparison={handleOpenComparison}
-                  isAccepting={acceptSwapMutation.isPending}
+                  isAccepting={acceptSwapMutation.isPending || rejectSwapMutation.isPending || revertSwapMutation.isPending}
                   isLoading={isOrderLoading || !orderData}
                   itemCount={orderData?.items?.length || 0}
                   isExpanded={isExpanded}
@@ -464,6 +540,9 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                   matchMeta={matchMeta}
                   onBack={() => setCurrentStep(2)}
                   onSubmit={handleSubmitOrder}
+                  onUpdateQuantity={handleUpdateQuantity}
+                  onRemoveItem={handleRemoveItem}
+                  onRevertSwap={handleRevertSwap}
                   isSubmitting={submitOrderMutation.isPending}
                   elapsedTime={elapsedTime}
                   orderId={orderId || undefined}
@@ -577,6 +656,10 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
         swap={selectedSwap}
         onAcceptSwap={(swapId: string) => {
           handleAcceptSwap(swapId);
+          setIsDrawerOpen(false);
+        }}
+        onSelectAlternative={(swapId: string, altProductId: string) => {
+          handleSelectAlternative(swapId, altProductId);
           setIsDrawerOpen(false);
         }}
       />

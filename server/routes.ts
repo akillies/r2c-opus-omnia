@@ -395,6 +395,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/orders/:orderId/swaps/:swapId/select-alternative", async (req, res) => {
+    try {
+      const { orderId, swapId } = req.params;
+      const { alternativeProductId } = req.body;
+      if (!alternativeProductId) return res.status(400).json({ message: "Missing alternativeProductId" });
+
+      const products = await storage.getProducts();
+      const altProduct = products.find((p: any) => p.id === alternativeProductId);
+      if (!altProduct) return res.status(404).json({ message: "Alternative product not found" });
+
+      const swap = await storage.updateSwapRecommendation(swapId, {
+        recommendedProductId: alternativeProductId,
+        isAccepted: true,
+        savingsAmount: "0"
+      });
+      if (!swap) return res.status(404).json({ message: "Swap not found" });
+
+      const items = await storage.getOrderItems(orderId);
+      const targetItem = items.find(item =>
+        item.productId === swap.originalProductId ||
+        (item.originalProductId === swap.originalProductId)
+      );
+      if (targetItem) {
+        const origPrice = parseFloat(products.find((p: any) => p.id === swap.originalProductId)?.unitPrice || targetItem.unitPrice);
+        const altPrice = parseFloat(altProduct.unitPrice);
+        const savings = (origPrice - altPrice) * targetItem.quantity;
+        await storage.updateSwapRecommendation(swapId, { savingsAmount: Math.max(0, savings).toFixed(2) });
+
+        await storage.updateOrderItem(targetItem.id, {
+          productId: alternativeProductId,
+          unitPrice: altProduct.unitPrice,
+          isSwapped: true,
+          originalProductId: swap.originalProductId
+        });
+      }
+
+      const updatedItems = await storage.getOrderItems(orderId);
+      let newTotal = 0;
+      for (const item of updatedItems) {
+        newTotal += parseFloat(item.unitPrice) * item.quantity;
+      }
+      await storage.updateOrder(orderId, { totalAmount: newTotal.toFixed(2) });
+
+      res.json({ success: true, swap });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to select alternative" });
+    }
+  });
+
+  app.post("/api/orders/:orderId/swaps/:swapId/reject", async (req, res) => {
+    try {
+      const { swapId } = req.params;
+      const swap = await storage.updateSwapRecommendation(swapId, { isAccepted: false });
+      if (!swap) return res.status(404).json({ message: "Swap not found" });
+      res.json({ success: true, swap });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to reject swap" });
+    }
+  });
+
+  app.post("/api/orders/:orderId/swaps/:swapId/revert", async (req, res) => {
+    try {
+      const { orderId, swapId } = req.params;
+      const swap = await storage.updateSwapRecommendation(swapId, { isAccepted: false });
+      if (!swap) return res.status(404).json({ message: "Swap not found" });
+
+      const products = await storage.getProducts();
+      const originalProduct = products.find((p: any) => p.id === swap.originalProductId);
+      const items = await storage.getOrderItems(orderId);
+      const swappedItem = items.find(item => item.productId === swap.recommendedProductId && item.originalProductId === swap.originalProductId);
+
+      if (swappedItem && originalProduct) {
+        await storage.updateOrderItem(swappedItem.id, {
+          productId: swap.originalProductId,
+          unitPrice: originalProduct.unitPrice,
+          isSwapped: false,
+          originalProductId: null as any
+        });
+      }
+
+      const updatedItems = await storage.getOrderItems(orderId);
+      let newTotal = 0;
+      for (const item of updatedItems) {
+        newTotal += parseFloat(item.unitPrice) * item.quantity;
+      }
+      await storage.updateOrder(orderId, { totalAmount: newTotal.toFixed(2) });
+
+      res.json({ success: true, swap });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to revert swap" });
+    }
+  });
+
+  app.patch("/api/orders/:orderId/items/:itemId", async (req, res) => {
+    try {
+      const { orderId, itemId } = req.params;
+      const { quantity } = req.body;
+      if (!quantity || quantity < 1) return res.status(400).json({ message: "Invalid quantity" });
+
+      const item = await storage.updateOrderItem(itemId, { quantity });
+      if (!item) return res.status(404).json({ message: "Item not found" });
+
+      const updatedItems = await storage.getOrderItems(orderId);
+      let newTotal = 0;
+      for (const i of updatedItems) {
+        newTotal += parseFloat(i.unitPrice) * i.quantity;
+      }
+      await storage.updateOrder(orderId, { totalAmount: newTotal.toFixed(2) });
+
+      res.json({ success: true, item });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update item" });
+    }
+  });
+
+  app.delete("/api/orders/:orderId/items/:itemId", async (req, res) => {
+    try {
+      const { orderId, itemId } = req.params;
+      const deleted = await storage.deleteOrderItem(itemId);
+      if (!deleted) return res.status(404).json({ message: "Item not found" });
+
+      const updatedItems = await storage.getOrderItems(orderId);
+      let newTotal = 0;
+      for (const i of updatedItems) {
+        newTotal += parseFloat(i.unitPrice) * i.quantity;
+      }
+      await storage.updateOrder(orderId, { totalAmount: newTotal.toFixed(2) });
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to remove item" });
+    }
+  });
+
   // Submit final order
   app.post("/api/orders/:id/submit", async (req, res) => {
     try {

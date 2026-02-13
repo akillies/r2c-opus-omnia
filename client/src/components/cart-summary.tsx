@@ -6,7 +6,7 @@ import {
   ArrowLeft, ShoppingCart, RotateCcw, Download, FileText, FileSpreadsheet,
   TrendingDown, TrendingUp, Clock, ShieldCheck, Leaf, Zap, AlertTriangle, Users,
   Award, BarChart3, CheckCircle2, Package, Sparkles, ChevronDown, ChevronUp,
-  ArrowRight, GitBranch, Target, Repeat, Database, Search
+  ArrowRight, GitBranch, Target, Repeat, Database, Search, Plus, Minus, Trash2, Undo2
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Product } from "@shared/schema";
@@ -30,6 +30,9 @@ interface CartSummaryProps {
   matchMeta?: MatchedItemMeta[];
   onBack: () => void;
   onSubmit: () => void;
+  onUpdateQuantity?: (itemId: string, quantity: number) => void;
+  onRemoveItem?: (itemId: string) => void;
+  onRevertSwap?: (swapId: string) => void;
   isSubmitting: boolean;
   elapsedTime?: number;
   orderId?: string;
@@ -47,7 +50,7 @@ interface ValueMetrics {
   totalValueCreated: number;
 }
 
-export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit, isSubmitting, elapsedTime, orderId, isExpanded = false }: CartSummaryProps) {
+export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit, onUpdateQuantity, onRemoveItem, onRevertSwap, isSubmitting, elapsedTime, orderId, isExpanded = false }: CartSummaryProps) {
   const [showAuditTrail, setShowAuditTrail] = useState(isExpanded);
   const [showValueDetails, setShowValueDetails] = useState(isExpanded);
 
@@ -437,28 +440,75 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                 {items.map((item, index) => {
                   const product = getProduct(item.productId);
                   const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
+                  const swapData = swap ? swaps.find(s => s.originalProductId === (item.originalProductId || item.productId) && s.isAccepted) : null;
                   const unitPrice = getItemPrice(item);
                   const lineTotal = unitPrice * item.quantity;
                   return (
-                    <tr key={index} className="hover:bg-gray-50/50 transition-colors" data-testid={`cart-item-${index}`}>
+                    <tr key={index} className="hover:bg-gray-50/50 transition-colors group/row" data-testid={`cart-item-${index}`}>
                       <td className="px-2.5 py-2">
                         <div className="font-medium text-gray-900">{product?.name || `Product ${item.productId}`}</div>
                         {product?.brand && <div className="text-[9px] text-gray-400">{product.brand} · {product.mpn}</div>}
                       </td>
                       <td className="px-2 py-2 text-gray-600">{product?.supplier || '—'}</td>
                       <td className="px-2 py-2 text-purple-600 text-[10px]">{product?.contract || '—'}</td>
-                      <td className="px-2 py-2 text-center text-gray-700">{item.quantity}</td>
+                      <td className="px-2 py-2 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          {onUpdateQuantity && (
+                            <button
+                              onClick={() => onUpdateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                              disabled={item.quantity <= 1}
+                              className="w-5 h-5 rounded bg-gray-100 hover:bg-gray-200 flex items-center justify-center disabled:opacity-30"
+                              data-testid={`button-qty-minus-exp-${index}`}
+                            >
+                              <Minus className="w-3 h-3 text-gray-600" />
+                            </button>
+                          )}
+                          <span className="text-gray-700 min-w-[24px] text-center font-medium">{item.quantity}</span>
+                          {onUpdateQuantity && (
+                            <button
+                              onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                              className="w-5 h-5 rounded bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
+                              data-testid={`button-qty-plus-exp-${index}`}
+                            >
+                              <Plus className="w-3 h-3 text-gray-600" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-2 py-2 text-right font-mono text-gray-700">${unitPrice.toFixed(2)}</td>
                       <td className="px-2 py-2 text-right font-mono font-semibold text-gray-900">${lineTotal.toFixed(2)}</td>
                       <td className="px-2 py-2 text-center">
-                        {swap ? (
-                          <Badge className="bg-green-100 text-green-700 text-[7px] px-1 py-0 flex items-center gap-0.5 justify-center">
-                            <RotateCcw className="w-2 h-2" />
-                            Swapped
-                          </Badge>
-                        ) : (
-                          <span className="text-[9px] text-gray-400">Original</span>
-                        )}
+                        <div className="flex items-center justify-center gap-1">
+                          {swap ? (
+                            <>
+                              <Badge className="bg-green-100 text-green-700 text-[7px] px-1 py-0 flex items-center gap-0.5">
+                                <RotateCcw className="w-2 h-2" />
+                                Swapped
+                              </Badge>
+                              {swapData && onRevertSwap && (
+                                <button
+                                  onClick={() => onRevertSwap(swapData.id)}
+                                  className="text-[9px] text-amber-600 hover:text-amber-700 flex items-center gap-0.5"
+                                  data-testid={`button-revert-exp-${index}`}
+                                >
+                                  <Undo2 className="w-2.5 h-2.5" />
+                                  Undo
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-[9px] text-gray-400">Original</span>
+                          )}
+                          {onRemoveItem && (
+                            <button
+                              onClick={() => onRemoveItem(item.id)}
+                              className="ml-1 opacity-0 group-hover/row:opacity-100 transition-opacity"
+                              data-testid={`button-remove-exp-${index}`}
+                            >
+                              <Trash2 className="w-3 h-3 text-red-400 hover:text-red-600" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -469,12 +519,13 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
             items.map((item, index) => {
               const product = getProduct(item.productId);
               const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
+              const swapData = swap ? swaps.find(s => s.originalProductId === (item.originalProductId || item.productId) && s.isAccepted) : null;
               const unitPrice = getItemPrice(item);
               const lineTotal = unitPrice * item.quantity;
               const displayName = product?.name || `Product ${item.productId}`;
               const displaySupplier = product?.supplier || '';
               return (
-                <div key={index} className="px-2.5 py-2 hover:bg-gray-50/50 transition-colors" data-testid={`cart-item-${index}`}>
+                <div key={index} className="px-2.5 py-2 hover:bg-gray-50/50 transition-colors group/item" data-testid={`cart-item-${index}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-0.5">
@@ -486,11 +537,56 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                           </Badge>
                         )}
                       </div>
-                      <p className="text-[9px] sm:text-[10px] text-gray-500">
-                        {item.quantity} × ${unitPrice.toFixed(2)}{displaySupplier ? ` · ${displaySupplier}` : ''}
-                      </p>
+                      <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-gray-500">
+                        <div className="flex items-center gap-1">
+                          {onUpdateQuantity && (
+                            <button
+                              onClick={() => onUpdateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                              disabled={item.quantity <= 1}
+                              className="w-4 h-4 rounded bg-gray-100 hover:bg-gray-200 flex items-center justify-center disabled:opacity-30 transition-colors"
+                              data-testid={`button-qty-minus-${index}`}
+                            >
+                              <Minus className="w-2.5 h-2.5 text-gray-600" />
+                            </button>
+                          )}
+                          <span className="font-medium text-gray-700 min-w-[18px] text-center">{item.quantity}</span>
+                          {onUpdateQuantity && (
+                            <button
+                              onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                              className="w-4 h-4 rounded bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                              data-testid={`button-qty-plus-${index}`}
+                            >
+                              <Plus className="w-2.5 h-2.5 text-gray-600" />
+                            </button>
+                          )}
+                          <span className="text-gray-400">×</span>
+                          <span>${unitPrice.toFixed(2)}</span>
+                        </div>
+                        {displaySupplier && <span className="text-gray-400">· {displaySupplier}</span>}
+                      </div>
+                      {swapData && onRevertSwap && (
+                        <button
+                          onClick={() => onRevertSwap(swapData.id)}
+                          className="mt-1 flex items-center gap-1 text-[9px] text-amber-600 hover:text-amber-700 transition-colors"
+                          data-testid={`button-revert-swap-${index}`}
+                        >
+                          <Undo2 className="w-2.5 h-2.5" />
+                          Revert to original
+                        </button>
+                      )}
                     </div>
-                    <span className="font-mono font-semibold text-gray-900 text-[11px] sm:text-xs shrink-0">${lineTotal.toFixed(2)}</span>
+                    <div className="flex items-start gap-1.5">
+                      <span className="font-mono font-semibold text-gray-900 text-[11px] sm:text-xs shrink-0">${lineTotal.toFixed(2)}</span>
+                      {onRemoveItem && (
+                        <button
+                          onClick={() => onRemoveItem(item.id)}
+                          className="w-4 h-4 rounded hover:bg-red-50 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity"
+                          data-testid={`button-remove-item-${index}`}
+                        >
+                          <Trash2 className="w-3 h-3 text-red-400 hover:text-red-600" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

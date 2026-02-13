@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Box, DollarSign, Truck, Leaf, ArrowDown, ArrowUp, ArrowLeft, ArrowRight, Eye, Zap, AlertTriangle, Users, TrendingDown, ShieldCheck, Sparkles, CheckCircle2, Brain } from "lucide-react";
+import { Check, Box, DollarSign, Truck, Leaf, ArrowDown, ArrowUp, ArrowLeft, ArrowRight, Eye, Zap, AlertTriangle, Users, TrendingDown, ShieldCheck, Sparkles, CheckCircle2, Brain, X, Undo2 } from "lucide-react";
 import type { Product } from "@shared/schema";
 
 interface SmartSwapsProps {
   swaps: any[];
   onAcceptSwap: (swapId: string) => void;
+  onRejectSwap: (swapId: string) => void;
+  onRevertSwap: (swapId: string) => void;
   onOpenComparison: (swap: any) => void;
   onBack: () => void;
   onNext: () => void;
@@ -20,6 +22,8 @@ interface SmartSwapsProps {
 export default function SmartSwaps({ 
   swaps, 
   onAcceptSwap, 
+  onRejectSwap,
+  onRevertSwap,
   onOpenComparison, 
   onBack, 
   onNext, 
@@ -417,6 +421,17 @@ export default function SmartSwaps({
                         Accept
                       </Button>
                       <Button
+                        onClick={() => onRejectSwap(swap.id)}
+                        disabled={isAccepting}
+                        variant="outline"
+                        size="sm"
+                        className="h-6 sm:h-7 text-[10px] sm:text-xs text-gray-500 border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300 px-2"
+                        data-testid={`button-decline-swap-${index}`}
+                      >
+                        <X className="w-3 h-3 mr-1" />
+                        Decline
+                      </Button>
+                      <Button
                         onClick={() => onOpenComparison(swap)}
                         variant="ghost"
                         size="sm"
@@ -428,11 +443,34 @@ export default function SmartSwaps({
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 mt-2 text-green-700">
-                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 text-white" />
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-1.5 text-green-700">
+                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                          <Check className="w-2.5 h-2.5 text-white" />
+                        </div>
+                        <span className="text-[10px] sm:text-xs font-medium">Accepted</span>
                       </div>
-                      <span className="text-[10px] sm:text-xs font-medium">Swap accepted</span>
+                      <Button
+                        onClick={() => onRevertSwap(swap.id)}
+                        disabled={isAccepting}
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 sm:h-7 text-[10px] sm:text-xs text-amber-600 hover:bg-amber-50 px-2"
+                        data-testid={`button-undo-swap-${index}`}
+                      >
+                        <Undo2 className="w-3 h-3 mr-1" />
+                        Undo
+                      </Button>
+                      <Button
+                        onClick={() => onOpenComparison(swap)}
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 sm:h-7 text-[10px] sm:text-xs text-gray-500 px-2"
+                        data-testid={`button-compare-accepted-${index}`}
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
+                        Compare
+                      </Button>
                     </div>
                   )}
                 </div>

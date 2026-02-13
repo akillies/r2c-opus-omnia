@@ -23,6 +23,7 @@ export interface IStorage {
   getOrderItems(orderId: string): Promise<OrderItem[]>;
   createOrderItem(orderItem: InsertOrderItem): Promise<OrderItem>;
   updateOrderItem(id: string, orderItem: Partial<OrderItem>): Promise<OrderItem | undefined>;
+  deleteOrderItem(id: string): Promise<boolean>;
 
   // Swap Recommendations
   getSwapRecommendations(orderId: string): Promise<SwapRecommendation[]>;
@@ -89,6 +90,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(orderItems.id, id))
       .returning();
     return orderItem || undefined;
+  }
+
+  async deleteOrderItem(id: string): Promise<boolean> {
+    const result = await db.delete(orderItems).where(eq(orderItems.id, id)).returning();
+    return result.length > 0;
   }
 
   async getSwapRecommendations(orderId: string): Promise<SwapRecommendation[]> {
