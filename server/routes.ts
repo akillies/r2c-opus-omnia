@@ -193,24 +193,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const item of items) {
         const product = getProduct(item.productId);
         const originalProduct = getProduct(item.originalProductId || item.productId);
-        if (!product) continue;
 
-        const price = parseFloat(product.unitPrice) * item.quantity;
+        const itemPrice = product ? parseFloat(product.unitPrice) : parseFloat(item.unitPrice || "0");
+        const price = itemPrice * item.quantity;
         finalTotal += price;
 
         if (originalProduct) {
           originalTotal += parseFloat(originalProduct.unitPrice) * item.quantity;
           totalCo2Original += (originalProduct.co2PerUnit || 0) * item.quantity;
+        } else {
+          originalTotal += price;
         }
 
-        totalCo2Final += (product.co2PerUnit || 0) * item.quantity;
-        if (product.contract) contractCompliantCount++;
-        if (product.preferredSupplier) preferredSupplierCount++;
-        if (product.recycledContent) totalRecycledContent += product.recycledContent;
-        if (product.certifications && product.certifications.length > 0) certifiedItemCount++;
-        if (product.isEco) ecoItemCount++;
-        suppliers.add(product.supplier);
-        if (product.category) categories.add(product.category);
+        if (product) {
+          totalCo2Final += (product.co2PerUnit || 0) * item.quantity;
+          if (product.contract) contractCompliantCount++;
+          if (product.preferredSupplier) preferredSupplierCount++;
+          if (product.recycledContent) totalRecycledContent += product.recycledContent;
+          if (product.certifications && product.certifications.length > 0) certifiedItemCount++;
+          if (product.isEco) ecoItemCount++;
+          suppliers.add(product.supplier);
+          if (product.category) categories.add(product.category);
+        }
       }
 
       const acceptedSwaps = swaps.filter((s: any) => s.isAccepted);
