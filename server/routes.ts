@@ -350,8 +350,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const items = await storage.getOrderItems(order.id);
       const swaps = await storage.getSwapRecommendations(order.id);
+      const products = await storage.getProducts();
 
-      res.json({ order, items, swaps });
+      const enrichedItems = items.map(item => {
+        const product = products.find((p: any) => p.id === item.productId);
+        return {
+          ...item,
+          unitPrice: item.unitPrice && parseFloat(item.unitPrice) > 0 ? item.unitPrice : (product?.unitPrice || "0"),
+          productName: product?.name || `Product ${item.productId}`,
+          productSupplier: product?.supplier || "",
+          productContract: product?.contract || "",
+          productBrand: product?.brand || "",
+          productMpn: product?.mpn || "",
+          productCategory: product?.category || "",
+          productUom: product?.unitOfMeasure || "EA",
+          productCertifications: product?.certifications || [],
+          productIsEco: product?.isEco || false,
+          productPreferredSupplier: product?.preferredSupplier || false,
+          productUnspsc: product?.unspsc || "",
+          productCategoryPath: product?.categoryPath || "",
+          productCo2PerUnit: product?.co2PerUnit || 0,
+          productRecycledContent: product?.recycledContent || 0,
+          productAvailability: product?.availability || "In Stock",
+        };
+      });
+
+      res.json({ order, items: enrichedItems, swaps });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch order" });
     }

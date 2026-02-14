@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Box, DollarSign, Truck, Leaf, ArrowDown, ArrowUp, ArrowLeft, ArrowRight, Eye, Zap, AlertTriangle, Users, TrendingDown, ShieldCheck, Sparkles, CheckCircle2, Brain, X, Undo2, ChevronDown, ChevronUp, ArrowRightLeft } from "lucide-react";
+import { Check, Box, DollarSign, Truck, Leaf, ArrowDown, ArrowUp, ArrowLeft, ArrowRight, Eye, Zap, AlertTriangle, Users, TrendingDown, ShieldCheck, Sparkles, CheckCircle2, Brain, X, Undo2, ChevronDown, ChevronUp, ArrowRightLeft, Clock, Target, Gauge } from "lucide-react";
 import type { Product } from "@shared/schema";
 
 interface SmartSwapsProps {
@@ -42,6 +42,9 @@ export default function SmartSwaps({
   const [showResults, setShowResults] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
+  const [urgency, setUrgency] = useState<'standard' | 'urgent' | 'critical'>('standard');
+  const [budgetMode, setBudgetMode] = useState<'balanced' | 'savings' | 'quality'>('balanced');
+  const [showPriorities, setShowPriorities] = useState(false);
 
   useEffect(() => {
     if (isLoading) {
@@ -267,10 +270,100 @@ export default function SmartSwaps({
         )}
       </div>
 
+      <button
+        onClick={() => setShowPriorities(!showPriorities)}
+        className="flex items-center gap-1.5 text-[10px] text-[#1e3a5f] hover:text-[#15293f] transition-colors w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5"
+        data-testid="button-toggle-priorities"
+      >
+        <Gauge className="w-3 h-3" />
+        <span className="font-medium">Optimization Priorities</span>
+        <span className="text-gray-400 ml-1">
+          {urgency !== 'standard' || budgetMode !== 'balanced' ? (
+            <span className="text-[#1e3a5f]">
+              {urgency !== 'standard' && <>{urgency === 'critical' ? 'Critical' : 'Urgent'}</>}
+              {urgency !== 'standard' && budgetMode !== 'balanced' && ' · '}
+              {budgetMode !== 'balanced' && <>{budgetMode === 'savings' ? 'Max Savings' : 'Quality First'}</>}
+            </span>
+          ) : 'Balanced defaults'}
+        </span>
+        {showPriorities ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
+      </button>
+
+      {showPriorities && (
+        <div className="bg-gradient-to-br from-slate-50 to-blue-50/30 border border-slate-200 rounded-lg p-3 space-y-3 animate-in slide-in-from-top-1 duration-200">
+          <div>
+            <div className="text-[9px] uppercase tracking-wide font-semibold text-gray-500 mb-1.5 flex items-center gap-1">
+              <Clock className="w-3 h-3" /> Delivery Urgency
+            </div>
+            <div className="flex gap-1.5">
+              {(['standard', 'urgent', 'critical'] as const).map((level) => (
+                <button
+                  key={level}
+                  onClick={() => setUrgency(level)}
+                  className={`flex-1 text-[10px] py-1.5 px-2 rounded-md border transition-all font-medium ${
+                    urgency === level
+                      ? level === 'critical' ? 'bg-red-100 border-red-300 text-red-800'
+                        : level === 'urgent' ? 'bg-amber-100 border-amber-300 text-amber-800'
+                        : 'bg-blue-100 border-blue-300 text-blue-800'
+                      : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                  }`}
+                  data-testid={`button-urgency-${level}`}
+                >
+                  {level === 'standard' && 'Standard'}
+                  {level === 'urgent' && 'Urgent'}
+                  {level === 'critical' && 'Critical'}
+                </button>
+              ))}
+            </div>
+            <div className="text-[9px] text-gray-400 mt-1">
+              {urgency === 'standard' && 'Normal lead times — prioritize best value'}
+              {urgency === 'urgent' && 'Shorter lead times — stock availability weighted higher'}
+              {urgency === 'critical' && 'Immediate need — stock swaps auto-highlighted'}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[9px] uppercase tracking-wide font-semibold text-gray-500 mb-1.5 flex items-center gap-1">
+              <Target className="w-3 h-3" /> Budget Mode
+            </div>
+            <div className="flex gap-1.5">
+              {(['savings', 'balanced', 'quality'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setBudgetMode(mode)}
+                  className={`flex-1 text-[10px] py-1.5 px-2 rounded-md border transition-all font-medium ${
+                    budgetMode === mode
+                      ? mode === 'savings' ? 'bg-green-100 border-green-300 text-green-800'
+                        : mode === 'quality' ? 'bg-purple-100 border-purple-300 text-purple-800'
+                        : 'bg-blue-100 border-blue-300 text-blue-800'
+                      : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                  }`}
+                  data-testid={`button-budget-${mode}`}
+                >
+                  {mode === 'savings' && 'Max Savings'}
+                  {mode === 'balanced' && 'Balanced'}
+                  {mode === 'quality' && 'Quality First'}
+                </button>
+              ))}
+            </div>
+            <div className="text-[9px] text-gray-400 mt-1">
+              {budgetMode === 'savings' && 'Aggressively optimize for lowest cost'}
+              {budgetMode === 'balanced' && 'Balance cost, quality, and sustainability'}
+              {budgetMode === 'quality' && 'Prefer premium brands and certified products'}
+            </div>
+          </div>
+        </div>
+      )}
+
       {stockRiskCount > 0 && (
-        <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5">
-          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-          <span className="text-[10px] text-amber-800 font-medium">{stockRiskCount} item{stockRiskCount > 1 ? 's have' : ' has'} stock risk — swap to avoid 7-14 day backorder delays</span>
+        <div className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 ${
+          urgency === 'critical' ? 'bg-red-50 border border-red-300' : 'bg-amber-50 border border-amber-200'
+        }`}>
+          <AlertTriangle className={`w-3.5 h-3.5 shrink-0 ${urgency === 'critical' ? 'text-red-600' : 'text-amber-600'}`} />
+          <span className={`text-[10px] font-medium ${urgency === 'critical' ? 'text-red-800' : 'text-amber-800'}`}>
+            {stockRiskCount} item{stockRiskCount > 1 ? 's have' : ' has'} stock risk
+            {urgency === 'critical' ? ' — CRITICAL: accept stock swaps to meet delivery deadline' : ' — swap to avoid 7-14 day backorder delays'}
+          </span>
         </div>
       )}
 
@@ -320,12 +413,30 @@ export default function SmartSwaps({
       )}
 
       <div className={`${isExpanded ? 'grid grid-cols-2 gap-3' : 'space-y-2'}`}>
-        {swaps.map((swap, index) => {
+        {[...swaps].sort((a, b) => {
+          const getSwapPriority = (swap: any) => {
+            let score = 0;
+            if (urgency === 'critical' || urgency === 'urgent') {
+              if (swap.swapType === 'stock') score += urgency === 'critical' ? 100 : 50;
+            }
+            if (budgetMode === 'savings') {
+              score += parseFloat(swap.savingsAmount || '0') * 10;
+            }
+            if (budgetMode === 'quality') {
+              if (swap.swapType === 'sustainability') score += 30;
+            }
+            return score;
+          };
+          return getSwapPriority(b) - getSwapPriority(a);
+        }).map((swap, index) => {
           const originalProduct = getProduct(swap.originalProductId);
           const recommendedProduct = getProduct(swap.recommendedProductId);
           if (!originalProduct || !recommendedProduct) return null;
 
           const savings = parseFloat(swap.savingsAmount || "0");
+          const isHighPriority = (urgency === 'critical' && swap.swapType === 'stock') ||
+            (budgetMode === 'savings' && savings > 0 && swap.swapType !== 'sustainability') ||
+            (budgetMode === 'quality' && swap.swapType === 'sustainability');
 
           if (swap.isAccepted) {
             return (
@@ -378,17 +489,28 @@ export default function SmartSwaps({
           return (
             <div
               key={swap.id}
-              className={`border border-gray-200 rounded-lg overflow-hidden transition-all hover:shadow-md hover:border-blue-300 border-l-[3px] ${getSwapAccentColor(swap.swapType)}`}
+              className={`border rounded-lg overflow-hidden transition-all hover:shadow-md border-l-[3px] ${getSwapAccentColor(swap.swapType)} ${
+                isHighPriority && !swap.isAccepted && swap.status !== 'rejected'
+                  ? 'border-[#1e3a5f]/40 bg-blue-50/30 ring-1 ring-[#1e3a5f]/10 hover:border-[#1e3a5f]/60'
+                  : 'border-gray-200 hover:border-blue-300'
+              }`}
               data-testid={`swap-card-${index}`}
               onMouseEnter={() => onHoverSwap?.([originalProduct.name, recommendedProduct.name])}
               onMouseLeave={() => onHoverSwap?.([])}
             >
               <div className="px-3 pt-2.5 pb-2">
                 <div className="flex items-center justify-between mb-1.5">
-                  <Badge className={`text-[8px] px-1.5 py-0 font-semibold ${getSwapColor(swap.swapType)}`}>
-                    {getSwapIcon(swap.swapType)}
-                    <span className="ml-1">{getSwapLabel(swap.swapType)}</span>
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Badge className={`text-[8px] px-1.5 py-0 font-semibold ${getSwapColor(swap.swapType)}`}>
+                      {getSwapIcon(swap.swapType)}
+                      <span className="ml-1">{getSwapLabel(swap.swapType)}</span>
+                    </Badge>
+                    {isHighPriority && !swap.isAccepted && swap.status !== 'rejected' && (
+                      <span className="text-[7px] uppercase tracking-wider font-bold text-[#1e3a5f] bg-[#1e3a5f]/10 px-1.5 py-0.5 rounded-full">
+                        Priority
+                      </span>
+                    )}
+                  </div>
                   {savings > 0 ? (
                     <span className="text-[10px] font-bold text-green-600 flex items-center gap-0.5">
                       <ArrowDown className="w-2.5 h-2.5" />

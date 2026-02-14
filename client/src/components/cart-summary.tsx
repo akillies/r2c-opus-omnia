@@ -9,7 +9,6 @@ import {
   ArrowRight, GitBranch, Target, Repeat, Database, Search, Plus, Minus, Trash2, Undo2
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import type { Product } from "@shared/schema";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -54,16 +53,11 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
   const [showAuditTrail, setShowAuditTrail] = useState(isExpanded);
   const [showValueDetails, setShowValueDetails] = useState(isExpanded);
 
-  const { data: products, isLoading: isProductsLoading } = useQuery<Product[]>({
-    queryKey: ['/api/products']
-  });
-
   const { data: valueMetrics } = useQuery<ValueMetrics>({
     queryKey: ['/api/orders', orderId, 'value-metrics'],
     enabled: !!orderId
   });
 
-  const getProduct = (productId: string) => products?.find(p => p.id === productId);
   const getMeta = (productId: string) => matchMeta?.find(m => m.productId === productId);
 
   const getSwapByOriginalProduct = (productId: string) => {
@@ -73,10 +67,15 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
   const getItemPrice = (item: any): number => {
     const storedPrice = parseFloat(item.unitPrice || "0");
     if (storedPrice > 0) return storedPrice;
-    const product = getProduct(item.productId);
-    if (product) return parseFloat(product.unitPrice);
     return 0;
   };
+
+  const getItemName = (item: any): string => item.productName || `Product ${item.productId}`;
+  const getItemSupplier = (item: any): string => item.productSupplier || "";
+  const getItemContract = (item: any): string => item.productContract || "";
+  const getItemBrand = (item: any): string => item.productBrand || "";
+  const getItemMpn = (item: any): string => item.productMpn || "";
+  const getItemUom = (item: any): string => item.productUom || "EA";
 
   const calculateTotals = () => {
     let originalTotal = 0;
@@ -87,9 +86,9 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
       finalTotal += currentPrice * item.quantity;
 
       if (item.originalProductId && item.originalProductId !== item.productId) {
-        const originalProduct = getProduct(item.originalProductId);
-        const origPrice = originalProduct ? parseFloat(originalProduct.unitPrice) : currentPrice;
-        originalTotal += origPrice * item.quantity;
+        const origSwap = swaps.find((s: any) => s.originalProductId === item.originalProductId && s.isAccepted);
+        const origSavingsPerUnit = origSwap ? parseFloat(origSwap.savingsAmount || "0") : 0;
+        originalTotal += (currentPrice + origSavingsPerUnit) * item.quantity;
       } else {
         originalTotal += currentPrice * item.quantity;
       }
@@ -103,25 +102,16 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
   const acceptedSwaps = swaps.filter(s => s.isAccepted).length;
   const ecoSwaps = swaps.filter(s => s.isAccepted && s.swapType === 'sustainability').length;
   const stockRisksAvoided = swaps.filter(s => s.isAccepted && s.swapType === 'stock').length;
+  const totalOptimizations = items.length + swaps.length;
   const savingsPercent = originalTotal > 0 ? ((totalSavings / originalTotal) * 100).toFixed(1) : '0';
   const manualEstimateMin = Math.max(15, items.length * 4);
 
-  const preferredCount = items.filter(item => getProduct(item.productId)?.preferredSupplier).length;
-  const uniqueSuppliers = new Set(items.map(item => getProduct(item.productId)?.supplier).filter(Boolean)).size;
-  const uniqueCategories = new Set(items.map(item => getProduct(item.productId)?.category).filter(Boolean)).size;
-  const onContractCount = items.filter(item => {
-    const p = getProduct(item.productId);
-    return p?.contract && p.contract.length > 0;
-  }).length;
-  const certifiedCount = items.filter(item => {
-    const p = getProduct(item.productId);
-    return p?.certifications && p.certifications.length > 0;
-  }).length;
-
-  const enrichedCount = items.filter(item => {
-    const p = getProduct(item.productId);
-    return p?.unspsc && p?.categoryPath;
-  }).length;
+  const preferredCount = items.filter(item => item.productPreferredSupplier).length;
+  const uniqueSuppliers = new Set(items.map(item => item.productSupplier).filter(Boolean)).size;
+  const uniqueCategories = new Set(items.map(item => item.productCategory).filter(Boolean)).size;
+  const onContractCount = items.filter(item => item.productContract && item.productContract.length > 0).length;
+  const certifiedCount = items.filter(item => item.productCertifications && item.productCertifications.length > 0).length;
+  const enrichedCount = items.filter(item => item.productUnspsc && item.productCategoryPath).length;
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -132,11 +122,10 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
   const exportToCSV = () => {
     const headers = ['Product Name', 'Quantity', 'Unit', 'Supplier', 'Contract', 'Unit Price', 'Line Total', 'Swapped'];
     const rows = items.map(item => {
-      const product = getProduct(item.productId);
       const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
       const price = getItemPrice(item);
       const lineTotal = price * item.quantity;
-      return [product?.name || `Product ${item.productId}`, item.quantity, product?.unitOfMeasure || 'EA', product?.supplier || '', product?.contract || '', `$${price.toFixed(2)}`, `$${lineTotal.toFixed(2)}`, swap ? 'Yes' : 'No'];
+      return [getItemName(item), item.quantity, getItemUom(item), getItemSupplier(item), getItemContract(item), `$${price.toFixed(2)}`, `$${lineTotal.toFixed(2)}`, swap ? 'Yes' : 'No'];
     });
 
     rows.push(['', '', '', '', '', '', '', '']);
@@ -173,11 +162,10 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
     doc.text(`Items: ${items.length}`, 14, 54);
 
     const tableData = items.map(item => {
-      const product = getProduct(item.productId);
       const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
       const price = getItemPrice(item);
       const lineTotal = price * item.quantity;
-      return [product?.name || `Product ${item.productId}`, item.quantity.toString(), product?.unitOfMeasure || 'EA', product?.supplier || '', `$${price.toFixed(2)}`, `$${lineTotal.toFixed(2)}`, swap ? 'Yes' : 'No'];
+      return [getItemName(item), item.quantity.toString(), getItemUom(item), getItemSupplier(item), `$${price.toFixed(2)}`, `$${lineTotal.toFixed(2)}`, swap ? 'Yes' : 'No'];
     });
 
     autoTable(doc, {
@@ -207,26 +195,6 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
 
   const totalValueCreated = valueMetrics?.totalValueCreated || 0;
 
-  if (isProductsLoading) {
-    return (
-      <div className="space-y-3 animate-pulse">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-gray-200 rounded-full" />
-          <div className="h-5 bg-gray-200 rounded w-32" />
-        </div>
-        <div className="bg-gray-100 rounded-lg p-4 space-y-2">
-          <div className="h-4 bg-gray-200 rounded w-48" />
-          <div className="grid grid-cols-2 gap-2">
-            <div className="h-16 bg-gray-200 rounded" />
-            <div className="h-16 bg-gray-200 rounded" />
-          </div>
-        </div>
-        <div className="h-20 bg-gray-100 rounded-lg" />
-        <div className="text-[10px] text-center text-gray-400">Loading order details...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -235,7 +203,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
             <CheckCircle2 className="w-4 h-4 text-green-500" />
             Order Ready
           </h3>
-          <p className="text-[10px] sm:text-xs text-gray-500">{items.length} items optimized by R2C Agent</p>
+          <p className="text-[10px] sm:text-xs text-gray-500">{items.length} items · {totalOptimizations} optimizations by R2C Agent</p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -438,7 +406,6 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {items.map((item, index) => {
-                  const product = getProduct(item.productId);
                   const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
                   const swapData = swap ? swaps.find(s => s.originalProductId === (item.originalProductId || item.productId) && s.isAccepted) : null;
                   const unitPrice = getItemPrice(item);
@@ -446,11 +413,11 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                   return (
                     <tr key={index} className="hover:bg-gray-50/50 transition-colors group/row" data-testid={`cart-item-${index}`}>
                       <td className="px-2.5 py-2">
-                        <div className="font-medium text-gray-900">{product?.name || `Product ${item.productId}`}</div>
-                        {product?.brand && <div className="text-[9px] text-gray-400">{product.brand} · {product.mpn}</div>}
+                        <div className="font-medium text-gray-900">{getItemName(item)}</div>
+                        {getItemBrand(item) && <div className="text-[9px] text-gray-400">{getItemBrand(item)} · {getItemMpn(item)}</div>}
                       </td>
-                      <td className="px-2 py-2 text-gray-600">{product?.supplier || '—'}</td>
-                      <td className="px-2 py-2 text-purple-600 text-[10px]">{product?.contract || '—'}</td>
+                      <td className="px-2 py-2 text-gray-600">{getItemSupplier(item) || '—'}</td>
+                      <td className="px-2 py-2 text-purple-600 text-[10px]">{getItemContract(item) || '—'}</td>
                       <td className="px-2 py-2 text-center">
                         <div className="flex items-center justify-center gap-1">
                           {onUpdateQuantity && (
@@ -517,13 +484,12 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
             </table>
           ) : (
             items.map((item, index) => {
-              const product = getProduct(item.productId);
               const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
               const swapData = swap ? swaps.find(s => s.originalProductId === (item.originalProductId || item.productId) && s.isAccepted) : null;
               const unitPrice = getItemPrice(item);
               const lineTotal = unitPrice * item.quantity;
-              const displayName = product?.name || `Product ${item.productId}`;
-              const displaySupplier = product?.supplier || '';
+              const displayName = getItemName(item);
+              const displaySupplier = getItemSupplier(item);
               return (
                 <div key={index} className="px-2.5 py-2 hover:bg-gray-50/50 transition-colors group/item" data-testid={`cart-item-${index}`}>
                   <div className="flex items-start justify-between gap-2">
@@ -612,12 +578,9 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
         {showAuditTrail && (
           <div className={`${isExpanded ? 'max-h-none' : 'max-h-[250px]'} overflow-y-auto divide-y divide-gray-100 animate-in fade-in slide-in-from-top-1 duration-200`} data-testid="audit-trail-list">
             {items.map((item, index) => {
-              const product = getProduct(item.productId);
-              const originalProduct = getProduct(item.originalProductId || item.productId);
               const meta = getMeta(item.originalProductId || item.productId) || getMeta(item.productId);
               const swap = getSwapByOriginalProduct(item.originalProductId || item.productId);
               const swapData = swap ? swaps.find(s => s.originalProductId === (item.originalProductId || item.productId) && s.isAccepted) : null;
-              if (!product) return null;
 
               return (
                 <div key={index} className={`px-2.5 py-2 ${isExpanded ? 'py-3' : ''}`} data-testid={`audit-item-${index}`}>
@@ -648,14 +611,14 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                       </div>
                       <div>
                         <div className="text-[8px] text-blue-500 uppercase tracking-wide font-semibold">Matched</div>
-                        <div className="text-[10px] text-gray-900 font-medium">{originalProduct?.name || product.name}</div>
-                        {isExpanded && originalProduct && (
+                        <div className="text-[10px] text-gray-900 font-medium">{getItemName(item)}</div>
+                        {isExpanded && (
                           <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[9px] text-gray-400">
-                            <span>{originalProduct.supplier}</span>
-                            <span>${parseFloat(originalProduct.unitPrice).toFixed(2)}/{originalProduct.unitOfMeasure}</span>
-                            {originalProduct.brand && <span>{originalProduct.brand}</span>}
-                            {originalProduct.contract && <span className="text-purple-500">{originalProduct.contract}</span>}
-                            {originalProduct.unspsc && <span className="text-slate-400">UNSPSC {originalProduct.unspsc}</span>}
+                            <span>{getItemSupplier(item)}</span>
+                            <span>${getItemPrice(item).toFixed(2)}/{getItemUom(item)}</span>
+                            {getItemBrand(item) && <span>{getItemBrand(item)}</span>}
+                            {getItemContract(item) && <span className="text-purple-500">{getItemContract(item)}</span>}
+                            {item.productUnspsc && <span className="text-slate-400">UNSPSC {item.productUnspsc}</span>}
                           </div>
                         )}
                         <div className="text-[9px] text-gray-400">
@@ -675,13 +638,13 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                         </div>
                         {isExpanded && meta?.matchDetails && (
                           <div className="mt-0.5 flex flex-wrap gap-1">
-                            {meta.matchDetails.exactTerms.map((t, i) => (
+                            {meta.matchDetails.exactTerms.map((t: string, i: number) => (
                               <span key={`e${i}`} className="bg-green-50 text-green-600 text-[8px] px-1 rounded border border-green-200">{t}</span>
                             ))}
-                            {meta.matchDetails.synonymTerms.map((t, i) => (
+                            {meta.matchDetails.synonymTerms.map((t: string, i: number) => (
                               <span key={`s${i}`} className="bg-teal-50 text-teal-600 text-[8px] px-1 rounded border border-teal-200">{t}</span>
                             ))}
-                            {meta.matchDetails.fuzzyTerms.map((t, i) => (
+                            {meta.matchDetails.fuzzyTerms.map((t: string, i: number) => (
                               <span key={`f${i}`} className="bg-orange-50 text-orange-600 text-[8px] px-1 rounded border border-orange-200">{t}</span>
                             ))}
                           </div>
@@ -690,13 +653,13 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                       {swapData && (
                         <div>
                           <div className="text-[8px] text-green-500 uppercase tracking-wide font-semibold">Swapped</div>
-                          <div className="text-[10px] text-green-800 font-medium">{product.name}</div>
+                          <div className="text-[10px] text-green-800 font-medium">{getItemName(item)}</div>
                           {isExpanded && (
                             <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[9px] text-green-600">
-                              <span>{product.supplier}</span>
-                              <span>${parseFloat(product.unitPrice).toFixed(2)}/{product.unitOfMeasure}</span>
-                              {product.certifications && product.certifications.length > 0 && (
-                                <span className="flex items-center gap-0.5"><Award className="w-2.5 h-2.5" />{product.certifications.join(', ')}</span>
+                              <span>{getItemSupplier(item)}</span>
+                              <span>${getItemPrice(item).toFixed(2)}/{getItemUom(item)}</span>
+                              {item.productCertifications && item.productCertifications.length > 0 && (
+                                <span className="flex items-center gap-0.5"><Award className="w-2.5 h-2.5" />{item.productCertifications.join(', ')}</span>
                               )}
                             </div>
                           )}
