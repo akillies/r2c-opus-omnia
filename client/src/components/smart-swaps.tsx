@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Box, DollarSign, Truck, Leaf, ArrowDown, ArrowUp, ArrowLeft, ArrowRight, Eye, Zap, AlertTriangle, Users, TrendingDown, ShieldCheck, Sparkles, CheckCircle2, Brain, X, Undo2 } from "lucide-react";
+import { Check, Box, DollarSign, Truck, Leaf, ArrowDown, ArrowUp, ArrowLeft, ArrowRight, Eye, Zap, AlertTriangle, Users, TrendingDown, ShieldCheck, Sparkles, CheckCircle2, Brain, X, Undo2, ChevronDown, ChevronUp, ArrowRightLeft } from "lucide-react";
 import type { Product } from "@shared/schema";
 
 interface SmartSwapsProps {
@@ -17,6 +17,7 @@ interface SmartSwapsProps {
   isLoading?: boolean;
   itemCount?: number;
   isExpanded?: boolean;
+  onHoverSwap?: (productIds: string[]) => void;
 }
 
 export default function SmartSwaps({ 
@@ -31,6 +32,7 @@ export default function SmartSwaps({
   isLoading,
   itemCount = 0,
   isExpanded = false,
+  onHoverSwap,
 }: SmartSwapsProps) {
   const { data: products } = useQuery<Product[]>({
     queryKey: ['/api/products']
@@ -39,6 +41,7 @@ export default function SmartSwaps({
   const [analysisPhase, setAnalysisPhase] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
 
   useEffect(() => {
     if (isLoading) {
@@ -77,23 +80,23 @@ export default function SmartSwaps({
 
   const getSwapIcon = (swapType: string) => {
     switch (swapType) {
-      case 'pack_size': return <Box className="w-3.5 h-3.5" />;
-      case 'supplier': return <DollarSign className="w-3.5 h-3.5" />;
-      case 'stock': return <AlertTriangle className="w-3.5 h-3.5" />;
-      case 'sustainability': return <Leaf className="w-3.5 h-3.5" />;
-      case 'consolidation': return <Users className="w-3.5 h-3.5" />;
-      default: return <Box className="w-3.5 h-3.5" />;
+      case 'pack_size': return <Box className="w-3 h-3" />;
+      case 'supplier': return <DollarSign className="w-3 h-3" />;
+      case 'stock': return <AlertTriangle className="w-3 h-3" />;
+      case 'sustainability': return <Leaf className="w-3 h-3" />;
+      case 'consolidation': return <Users className="w-3 h-3" />;
+      default: return <Box className="w-3 h-3" />;
     }
   };
 
   const getSwapColor = (swapType: string) => {
     switch (swapType) {
-      case 'pack_size': return 'bg-blue-100 text-blue-600';
-      case 'supplier': return 'bg-indigo-100 text-indigo-600';
-      case 'stock': return 'bg-amber-100 text-amber-600';
-      case 'sustainability': return 'bg-green-100 text-green-600';
-      case 'consolidation': return 'bg-purple-100 text-purple-600';
-      default: return 'bg-blue-100 text-blue-600';
+      case 'pack_size': return 'bg-blue-100 text-blue-700';
+      case 'supplier': return 'bg-indigo-100 text-indigo-700';
+      case 'stock': return 'bg-amber-100 text-amber-700';
+      case 'sustainability': return 'bg-emerald-100 text-emerald-700';
+      case 'consolidation': return 'bg-purple-100 text-purple-700';
+      default: return 'bg-blue-100 text-blue-700';
     }
   };
 
@@ -108,12 +111,26 @@ export default function SmartSwaps({
     }
   };
 
+  const getSwapAccentColor = (swapType: string) => {
+    switch (swapType) {
+      case 'pack_size': return 'border-l-blue-400';
+      case 'supplier': return 'border-l-indigo-400';
+      case 'stock': return 'border-l-amber-400';
+      case 'sustainability': return 'border-l-emerald-400';
+      case 'consolidation': return 'border-l-purple-400';
+      default: return 'border-l-blue-400';
+    }
+  };
+
   const potentialSavings = swaps.reduce((acc, swap) => acc + Math.max(0, parseFloat(swap.savingsAmount || "0")), 0);
   const acceptedCount = swaps.filter(s => s.isAccepted).length;
+  const rejectedCount = swaps.filter(s => s.status === 'rejected').length;
+  const pendingCount = swaps.length - acceptedCount - rejectedCount;
   const stockRiskCount = swaps.filter(s => s.swapType === 'stock').length;
   const ecoCount = swaps.filter(s => s.swapType === 'sustainability').length;
   const bulkCount = swaps.filter(s => s.swapType === 'pack_size').length;
   const supplierCount = swaps.filter(s => s.swapType === 'supplier').length;
+  const acceptedSavings = swaps.filter(s => s.isAccepted).reduce((acc: number, s: any) => acc + Math.max(0, parseFloat(s.savingsAmount || "0")), 0);
 
   const analysisSteps = [
     { text: "Scanning VIA-enriched catalog across 630+ suppliers...", icon: <Sparkles className="w-3 h-3" /> },
@@ -211,123 +228,98 @@ export default function SmartSwaps({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="font-bold text-gray-900 mb-0.5 text-sm sm:text-base flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-green-500" />
-            Order Optimized
-          </h3>
-          <p className="text-[10px] sm:text-xs text-gray-500">
-            {swaps.length} optimization{swaps.length !== 1 ? 's' : ''} found across {itemCount} items
-          </p>
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+            <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+          </div>
+          <div>
+            <h3 className="font-bold text-gray-900 text-sm leading-none">{swaps.length} Swap{swaps.length !== 1 ? 's' : ''} Found</h3>
+            <p className="text-[10px] text-gray-500 mt-0.5">{acceptedCount} accepted · {pendingCount} pending</p>
+          </div>
         </div>
-        {swaps.length > 0 && acceptedCount < swaps.length && (
+        {acceptedCount < swaps.length && (
           <Button
             onClick={acceptAll}
-            variant="outline"
             size="sm"
-            className="h-6 text-[10px] border-green-300 text-green-700 hover:bg-green-50 px-2"
+            className="h-7 text-[10px] bg-green-600 hover:bg-green-700 text-white px-2.5 shadow-sm"
             data-testid="button-accept-all"
           >
-            <Check className="w-3 h-3 mr-0.5" />
+            <Check className="w-3 h-3 mr-1" />
             Accept All
           </Button>
         )}
       </div>
 
-      <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-lg p-2.5">
-        <div className="flex items-center gap-1.5 mb-2">
-          <Zap className="w-3.5 h-3.5 text-emerald-600" />
-          <span className="text-xs font-semibold text-emerald-800">Agent Intelligence <span className="font-normal text-emerald-600">· VIA-powered</span></span>
+      <div className="flex items-center gap-1.5">
+        {potentialSavings > 0 && (
+          <div className="flex items-center gap-1 bg-green-50 border border-green-200 rounded-full px-2 py-0.5">
+            <TrendingDown className="w-3 h-3 text-green-600" />
+            <span className="text-[10px] font-semibold text-green-700" data-testid="text-potential-savings">${potentialSavings.toFixed(2)} potential</span>
+          </div>
+        )}
+        {acceptedSavings > 0 && (
+          <div className="flex items-center gap-1 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+            <Check className="w-3 h-3 text-emerald-600" />
+            <span className="text-[10px] font-semibold text-emerald-700">${acceptedSavings.toFixed(2)} locked in</span>
+          </div>
+        )}
+      </div>
+
+      {stockRiskCount > 0 && (
+        <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5">
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+          <span className="text-[10px] text-amber-800 font-medium">{stockRiskCount} item{stockRiskCount > 1 ? 's have' : ' has'} stock risk — swap to avoid 7-14 day backorder delays</span>
         </div>
-        <div className="space-y-1.5 text-[10px] sm:text-[11px] text-gray-700">
+      )}
+
+      <button
+        onClick={() => setShowInsights(!showInsights)}
+        className="flex items-center gap-1.5 text-[10px] text-gray-500 hover:text-gray-700 transition-colors w-full"
+        data-testid="button-toggle-insights"
+      >
+        <Zap className="w-3 h-3" />
+        <span>VIA Intelligence Summary</span>
+        {showInsights ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
+      </button>
+
+      {showInsights && (
+        <div className="bg-gradient-to-r from-slate-50 to-blue-50/50 border border-slate-200 rounded-lg p-2.5 space-y-1.5 text-[10px] text-gray-600 animate-in slide-in-from-top-1 duration-200">
           {potentialSavings > 0 && (
             <div className="flex items-start gap-1.5">
               <TrendingDown className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
-              <span>Identified <strong className="text-green-700">${potentialSavings.toFixed(2)}</strong> in potential line-item savings across {swaps.filter(s => parseFloat(s.savingsAmount || "0") > 0).length} recommendations</span>
-            </div>
-          )}
-          {stockRiskCount > 0 && (
-            <div className="flex items-start gap-1.5">
-              <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
-              <span><strong className="text-amber-700">{stockRiskCount} stock risk{stockRiskCount > 1 ? 's' : ''} detected</strong> — VIA flagged low inventory and sourced available alternatives to prevent backorders</span>
+              <span>Identified <strong className="text-green-700">${potentialSavings.toFixed(2)}</strong> in potential savings across {swaps.filter(s => parseFloat(s.savingsAmount || "0") > 0).length} recommendations</span>
             </div>
           )}
           {bulkCount > 0 && (
             <div className="flex items-start gap-1.5">
               <Box className="w-3 h-3 text-blue-500 shrink-0 mt-0.5" />
-              <span><strong className="text-blue-700">{bulkCount} bulk format{bulkCount > 1 ? 's' : ''}</strong> with better per-unit economics identified from VIA pack-size analysis</span>
+              <span><strong className="text-blue-700">{bulkCount} bulk format{bulkCount > 1 ? 's' : ''}</strong> with better per-unit economics</span>
+            </div>
+          )}
+          {ecoCount > 0 && (
+            <div className="flex items-start gap-1.5">
+              <Leaf className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
+              <span><strong className="text-green-700">{ecoCount} eco alternative{ecoCount > 1 ? 's' : ''}</strong> aligned with Green Purchasing Policy</span>
             </div>
           )}
           {supplierCount > 0 && (
             <div className="flex items-start gap-1.5">
               <DollarSign className="w-3 h-3 text-indigo-500 shrink-0 mt-0.5" />
-              <span><strong className="text-indigo-700">{supplierCount} competitive price{supplierCount > 1 ? 's' : ''}</strong> from cooperative master agreement suppliers at lower cost</span>
+              <span><strong className="text-indigo-700">{supplierCount} competitive price{supplierCount > 1 ? 's' : ''}</strong> from cooperative suppliers</span>
             </div>
           )}
-          {ecoCount > 0 && (
-            <div className="flex items-start gap-1.5">
-              <Leaf className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
-              <span><strong className="text-green-700">{ecoCount} sustainable alternative{ecoCount > 1 ? 's' : ''}</strong> — certified eco products aligned with Green Purchasing Policy mandates</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        <div className="bg-green-50 border border-green-200 rounded-lg px-2.5 sm:px-3 py-2 text-center">
-          <div className="text-[9px] sm:text-[10px] text-green-600 uppercase font-semibold tracking-wide">Potential Savings</div>
-          <div className="text-base sm:text-lg font-bold text-green-900" data-testid="text-potential-savings">
-            {potentialSavings > 0 ? `$${potentialSavings.toFixed(2)}` : '—'}
-          </div>
-        </div>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg px-2.5 sm:px-3 py-2 text-center">
-          <div className="text-[9px] sm:text-[10px] text-blue-600 uppercase font-semibold tracking-wide">Accepted</div>
-          <div className="text-base sm:text-lg font-bold text-blue-900" data-testid="text-accepted-count">{acceptedCount} / {swaps.length}</div>
-        </div>
-      </div>
-
-      <div className="bg-gradient-to-r from-amber-50/80 to-orange-50/60 border border-amber-200/80 rounded-lg p-2.5" data-testid="proactive-insights">
-        <div className="flex items-center gap-1.5 mb-2">
-          <Brain className="w-3.5 h-3.5 text-amber-600" />
-          <span className="text-xs font-semibold text-amber-800">Proactive Insights</span>
-        </div>
-        <div className="space-y-1.5 text-[10px] sm:text-[11px] text-gray-700">
-          {stockRiskCount > 0 && (
-            <div className="flex items-start gap-1.5">
-              <AlertTriangle className="w-3 h-3 text-red-500 shrink-0 mt-0.5" />
-              <span><strong className="text-red-700">Action recommended:</strong> {stockRiskCount} item{stockRiskCount > 1 ? 's have' : ' has'} inventory risk — accepting these swaps prevents potential backorder delays of 7-14 days</span>
-            </div>
-          )}
-          {bulkCount > 0 && (
-            <div className="flex items-start gap-1.5">
-              <TrendingDown className="w-3 h-3 text-blue-500 shrink-0 mt-0.5" />
-              <span>Bulk format{bulkCount > 1 ? 's reduce' : ' reduces'} your <strong className="text-blue-700">per-unit cost by up to {Math.round(potentialSavings / Math.max(1, bulkCount))}%</strong> — lower reorder frequency means less procurement overhead</span>
-            </div>
-          )}
-          {ecoCount > 0 && (
-            <div className="flex items-start gap-1.5">
-              <Leaf className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
-              <span>Accepting eco swaps advances <strong className="text-green-700">Green Purchasing Policy goals</strong> — {ecoCount} certified alternative{ecoCount > 1 ? 's' : ''} with equivalent or better performance</span>
-            </div>
-          )}
-          {acceptedCount === swaps.length && swaps.length > 0 && (
+          {acceptedCount === swaps.length && (
             <div className="flex items-start gap-1.5">
               <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
-              <span className="text-green-700 font-medium">All recommendations accepted — your order is fully optimized</span>
-            </div>
-          )}
-          {acceptedCount === 0 && swaps.length > 0 && (
-            <div className="flex items-start gap-1.5">
-              <Zap className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
-              <span>Review each swap to unlock <strong className="text-amber-700">${potentialSavings.toFixed(2)}</strong> in savings — you can compare side-by-side before accepting</span>
+              <span className="text-green-700 font-medium">All recommendations accepted — order fully optimized</span>
             </div>
           )}
         </div>
-      </div>
+      )}
 
-      <div className={`${isExpanded ? 'grid grid-cols-2 gap-3' : 'space-y-2 max-h-[250px] sm:max-h-[300px] overflow-y-auto pr-1'}`}>
+      <div className={`${isExpanded ? 'grid grid-cols-2 gap-3' : 'space-y-2'}`}>
         {swaps.map((swap, index) => {
           const originalProduct = getProduct(swap.originalProductId);
           const recommendedProduct = getProduct(swap.recommendedProductId);
@@ -335,144 +327,130 @@ export default function SmartSwaps({
 
           const savings = parseFloat(swap.savingsAmount || "0");
 
+          if (swap.isAccepted) {
+            return (
+              <div
+                key={swap.id}
+                className="border border-green-200 bg-green-50/60 rounded-lg px-3 py-2 transition-all"
+                data-testid={`swap-card-${index}`}
+                onMouseEnter={() => onHoverSwap?.([originalProduct.name, recommendedProduct.name])}
+                onMouseLeave={() => onHoverSwap?.([])}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-medium text-green-800 truncate">{recommendedProduct.name}</div>
+                      <div className="text-[9px] text-green-600">
+                        {savings > 0 ? `Saving $${savings.toFixed(2)}/unit` : 'Swapped'} · {recommendedProduct.supplier}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                    <Button
+                      onClick={() => onOpenComparison(swap)}
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-green-600 hover:bg-green-100"
+                      data-testid={`button-compare-accepted-${index}`}
+                    >
+                      <Eye className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      onClick={() => onRevertSwap(swap.id)}
+                      disabled={isAccepting}
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-[10px] text-amber-600 hover:bg-amber-50 px-1.5"
+                      data-testid={`button-undo-swap-${index}`}
+                    >
+                      <Undo2 className="w-3 h-3 mr-0.5" />
+                      Undo
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div
               key={swap.id}
-              className={`border rounded-lg p-2.5 sm:p-3 transition-all hover:shadow-sm ${
-                swap.isAccepted ? 'border-green-300 bg-green-50/50' : 'border-gray-200 bg-white hover:border-blue-300'
-              }`}
+              className={`border border-gray-200 rounded-lg overflow-hidden transition-all hover:shadow-md hover:border-blue-300 border-l-[3px] ${getSwapAccentColor(swap.swapType)}`}
               data-testid={`swap-card-${index}`}
+              onMouseEnter={() => onHoverSwap?.([originalProduct.name, recommendedProduct.name])}
+              onMouseLeave={() => onHoverSwap?.([])}
             >
-              <div className="flex items-start gap-2">
-                <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center shrink-0 ${getSwapColor(swap.swapType)}`}>
-                  {getSwapIcon(swap.swapType)}
+              <div className="px-3 pt-2.5 pb-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <Badge className={`text-[8px] px-1.5 py-0 font-semibold ${getSwapColor(swap.swapType)}`}>
+                    {getSwapIcon(swap.swapType)}
+                    <span className="ml-1">{getSwapLabel(swap.swapType)}</span>
+                  </Badge>
+                  {savings > 0 ? (
+                    <span className="text-[10px] font-bold text-green-600 flex items-center gap-0.5">
+                      <ArrowDown className="w-2.5 h-2.5" />
+                      Save ${savings.toFixed(2)}
+                    </span>
+                  ) : savings < 0 ? (
+                    <span className="text-[10px] font-medium text-amber-600 flex items-center gap-0.5">
+                      <ArrowUp className="w-2.5 h-2.5" />
+                      +${Math.abs(savings).toFixed(2)}
+                    </span>
+                  ) : null}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-1">
-                    <div>
-                      <h4 className="font-medium text-gray-900 text-[11px] sm:text-sm leading-tight">{originalProduct.name}</h4>
-                      <Badge className={`mt-0.5 text-[8px] sm:text-[9px] px-1 py-0 ${getSwapColor(swap.swapType)}`}>
-                        {getSwapLabel(swap.swapType)}
-                      </Badge>
-                    </div>
-                    {savings > 0 ? (
-                      <Badge className="bg-green-100 text-green-700 text-[9px] sm:text-[10px] px-1.5 py-0 shrink-0 flex items-center gap-0.5">
-                        <ArrowDown className="w-2.5 h-2.5" />
-                        ${savings.toFixed(2)}
-                      </Badge>
-                    ) : savings < 0 ? (
-                      <Badge className="bg-amber-100 text-amber-700 text-[9px] sm:text-[10px] px-1.5 py-0 shrink-0 flex items-center gap-0.5">
-                        <ArrowUp className="w-2.5 h-2.5" />
-                        +${Math.abs(savings).toFixed(2)}
-                      </Badge>
-                    ) : null}
+
+                <div className="grid grid-cols-[1fr,auto,1fr] gap-1 items-start mb-2">
+                  <div className="bg-gray-50 rounded-md p-1.5">
+                    <div className="text-[8px] uppercase font-semibold text-gray-400 tracking-wider mb-0.5">Current</div>
+                    <div className="text-[10px] font-medium text-gray-800 leading-tight line-clamp-2">{originalProduct.name}</div>
+                    <div className="text-[10px] font-mono font-semibold text-gray-600 mt-0.5">${parseFloat(originalProduct.unitPrice).toFixed(2)}</div>
+                    <div className="text-[9px] text-gray-400 truncate">{originalProduct.supplier}</div>
                   </div>
+                  <div className="flex items-center justify-center self-center pt-3">
+                    <ArrowRightLeft className="w-3 h-3 text-gray-300" />
+                  </div>
+                  <div className="bg-blue-50/80 rounded-md p-1.5 border border-blue-100">
+                    <div className="text-[8px] uppercase font-semibold text-blue-500 tracking-wider mb-0.5">Recommended</div>
+                    <div className="text-[10px] font-medium text-gray-800 leading-tight line-clamp-2">{recommendedProduct.name}</div>
+                    <div className="text-[10px] font-mono font-semibold text-blue-700 mt-0.5">${parseFloat(recommendedProduct.unitPrice).toFixed(2)}</div>
+                    <div className="text-[9px] text-gray-400 truncate">{recommendedProduct.supplier}</div>
+                  </div>
+                </div>
 
-                  <p className={`text-[10px] text-gray-500 mt-0.5 leading-relaxed ${isExpanded ? '' : 'line-clamp-2'}`}>{swap.reason}</p>
+                <p className="text-[9px] text-gray-500 leading-relaxed line-clamp-2 mb-2">{swap.reason}</p>
 
-                  {isExpanded && (
-                    <div className="mt-2 grid grid-cols-2 gap-2 text-[10px]">
-                      <div className="bg-gray-50 rounded p-1.5">
-                        <div className="text-gray-400 uppercase text-[8px] font-semibold tracking-wide">Current</div>
-                        <div className="font-medium text-gray-700 truncate">{originalProduct.name}</div>
-                        <div className="text-gray-500">{originalProduct.supplier} · ${parseFloat(originalProduct.unitPrice).toFixed(2)}/{originalProduct.unitOfMeasure}</div>
-                        {originalProduct.packSize && <div className="text-gray-400">Pack: {originalProduct.packSize} {originalProduct.packUnit || 'ct'}</div>}
-                        {originalProduct.contract && <div className="text-purple-500 truncate">{originalProduct.contract}</div>}
-                      </div>
-                      <div className="bg-green-50 rounded p-1.5">
-                        <div className="text-green-600 uppercase text-[8px] font-semibold tracking-wide">Recommended</div>
-                        <div className="font-medium text-green-800 truncate">{recommendedProduct.name}</div>
-                        <div className="text-green-700">{recommendedProduct.supplier} · ${parseFloat(recommendedProduct.unitPrice).toFixed(2)}/{recommendedProduct.unitOfMeasure}</div>
-                        {recommendedProduct.packSize && <div className="text-green-600">Pack: {recommendedProduct.packSize} {recommendedProduct.packUnit || 'ct'}</div>}
-                        {recommendedProduct.certifications && recommendedProduct.certifications.length > 0 && (
-                          <div className="flex flex-wrap gap-0.5 mt-0.5">
-                            {recommendedProduct.certifications.map((cert: string, i: number) => (
-                              <span key={i} className="bg-green-100 text-green-700 text-[7px] px-1 rounded">{cert}</span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {!isExpanded && (
-                    <div className="flex items-center gap-2 sm:gap-3 mt-1 text-[10px] sm:text-xs">
-                      <span className="text-gray-400 line-through">
-                        ${parseFloat(originalProduct.unitPrice).toFixed(2)}
-                      </span>
-                      <span className="text-gray-300">→</span>
-                      <span className="font-semibold text-green-700">
-                        ${parseFloat(recommendedProduct.unitPrice).toFixed(2)}
-                      </span>
-                      <span className="text-gray-400 text-[9px]">{recommendedProduct.supplier}</span>
-                    </div>
-                  )}
-
-                  {!swap.isAccepted ? (
-                    <div className="flex items-center gap-2 mt-2">
-                      <Button
-                        onClick={() => onAcceptSwap(swap.id)}
-                        disabled={isAccepting}
-                        size="sm"
-                        className="h-6 sm:h-7 text-[10px] sm:text-xs bg-[#1e3a5f] hover:bg-[#15293f] text-white px-2 sm:px-3"
-                        data-testid={`button-accept-swap-${index}`}
-                      >
-                        <Check className="w-3 h-3 mr-1" />
-                        Accept
-                      </Button>
-                      <Button
-                        onClick={() => onRejectSwap(swap.id)}
-                        disabled={isAccepting}
-                        variant="outline"
-                        size="sm"
-                        className="h-6 sm:h-7 text-[10px] sm:text-xs text-gray-500 border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300 px-2"
-                        data-testid={`button-decline-swap-${index}`}
-                      >
-                        <X className="w-3 h-3 mr-1" />
-                        Decline
-                      </Button>
-                      <Button
-                        onClick={() => onOpenComparison(swap)}
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 sm:h-7 text-[10px] sm:text-xs text-gray-600 px-2"
-                        data-testid={`button-browse-options-${index}`}
-                      >
-                        <Eye className="w-3 h-3 mr-1" />
-                        Compare
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 mt-2">
-                      <div className="flex items-center gap-1.5 text-green-700">
-                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                          <Check className="w-2.5 h-2.5 text-white" />
-                        </div>
-                        <span className="text-[10px] sm:text-xs font-medium">Accepted</span>
-                      </div>
-                      <Button
-                        onClick={() => onRevertSwap(swap.id)}
-                        disabled={isAccepting}
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 sm:h-7 text-[10px] sm:text-xs text-amber-600 hover:bg-amber-50 px-2"
-                        data-testid={`button-undo-swap-${index}`}
-                      >
-                        <Undo2 className="w-3 h-3 mr-1" />
-                        Undo
-                      </Button>
-                      <Button
-                        onClick={() => onOpenComparison(swap)}
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 sm:h-7 text-[10px] sm:text-xs text-gray-500 px-2"
-                        data-testid={`button-compare-accepted-${index}`}
-                      >
-                        <Eye className="w-3 h-3 mr-1" />
-                        Compare
-                      </Button>
-                    </div>
-                  )}
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    onClick={() => onAcceptSwap(swap.id)}
+                    disabled={isAccepting}
+                    size="sm"
+                    className="h-7 flex-1 text-[11px] bg-[#1e3a5f] hover:bg-[#15293f] text-white font-medium shadow-sm"
+                    data-testid={`button-accept-swap-${index}`}
+                  >
+                    <Check className="w-3 h-3 mr-1" />
+                    Accept Swap
+                  </Button>
+                  <Button
+                    onClick={() => onOpenComparison(swap)}
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-[10px] text-gray-600 border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 px-2"
+                    data-testid={`button-browse-options-${index}`}
+                  >
+                    <Eye className="w-3 h-3 mr-0.5" />
+                    Compare
+                  </Button>
+                  <button
+                    onClick={() => onRejectSwap(swap.id)}
+                    disabled={isAccepting}
+                    className="text-[10px] text-gray-400 hover:text-red-500 transition-colors px-1"
+                    data-testid={`button-decline-swap-${index}`}
+                  >
+                    Skip
+                  </button>
                 </div>
               </div>
             </div>

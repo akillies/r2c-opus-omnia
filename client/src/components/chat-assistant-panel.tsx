@@ -526,6 +526,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
                   onRejectSwap={handleRejectSwap}
                   onRevertSwap={handleRevertSwap}
                   onOpenComparison={handleOpenComparison}
+                  onHoverSwap={onHighlightProducts}
                   isAccepting={acceptSwapMutation.isPending || rejectSwapMutation.isPending || revertSwapMutation.isPending}
                   isLoading={isOrderLoading || !orderData}
                   itemCount={orderData?.items?.length || 0}

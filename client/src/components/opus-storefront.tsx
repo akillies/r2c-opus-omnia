@@ -312,7 +312,7 @@ export default function OpusStorefront({ cartItemCount, onOpenAssistant, highlig
 
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
             {featuredProducts.map((product) => {
-              const isHighlighted = highlightedProducts.includes(product.id);
+              const isHighlighted = highlightedProducts.includes(product.id) || highlightedProducts.some(hp => product.name.toLowerCase().includes(hp.toLowerCase()) || hp.toLowerCase().includes(product.name.toLowerCase()));
               const isHovered = hoveredProduct === product.id;
               const isInCart = addedToCart.includes(product.id);
               const isWishlisted = wishlist.includes(product.id);
