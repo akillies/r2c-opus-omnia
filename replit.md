@@ -1,6 +1,6 @@
 # Overview
 
-R2C (Requirements 2 Cart) by EIS × OPUS/OMNIA Partners — an agentic commerce system for procurement that autonomously converts RFQs into optimized purchase orders. Built on EIS's VIA platform (data ingestion, schema governance, taxonomy optimization, content enrichment, compliance checks, search tuning), R2C acts on behalf of procurement officers to parse documents, match products against 7.5M+ enriched catalog items across 630+ cooperative suppliers, enforce cooperative contract compliance, optimize costs through intelligent swap recommendations, manage stock risks, and advance sustainability goals. VIA is the enrichment layer that prepares the data — R2C works without it, but performs dramatically better with VIA-enriched data.
+R2C (Requirements 2 Cart) by EIS × OPUS/OMNIA Partners is an agentic commerce system designed for procurement. Its primary purpose is to autonomously convert Requests for Quotation (RFQs) into optimized purchase orders. R2C acts on behalf of procurement officers to parse various documents, match products against a vast catalog of over 7.5 million enriched items from 630+ cooperative suppliers, and ensure compliance with cooperative contracts. The system also optimizes costs through intelligent swap recommendations, manages stock risks, and supports sustainability goals. Leveraging the EIS VIA platform for data enrichment, R2C significantly enhances data quality and matching accuracy, though it can function independently.
 
 # User Preferences
 
@@ -10,197 +10,66 @@ Preferred communication style: Simple, everyday language.
 
 ## EIS VIA Platform (Data Foundation Layer)
 
-R2C is powered by EIS's VIA platform — the data processing and enrichment technology for OMNIA's OPUS platform. VIA ingests all types of documents and data feeds, enriches them, and prepares the data that makes R2C's intelligent matching possible:
-- **Document Ingestion Pipeline**: Ingests any format (JSON, XML, flat files, PDFs, spreadsheets, spec sheets, compliance certificates) from 630+ supplier feeds; multi-source reconciliation; continuous pipeline for feed updates and new supplier onboarding
-- **Schema Detection & Attribute Mapping**: Unified product model using industry standards (Schema.org, GS1, eCl@ss)
-- **Taxonomy Optimization**: UNSPSC classification, category path hierarchy, variant product modeling
-- **Content Enrichment**: Title/description normalization, missing attribute fill, keyword/synonym generation
-- **Search Enhancement**: Elastic config tuning, field weighting, synonym enrichment, faceting optimization
-- **Compliance Checks**: Automated contract verification, policy rule enforcement (budget limits, sustainability mandates, approved vendor lists), regulatory compliance flagging, audit trail generation
-- **Sustainability Data**: CO₂ per unit, recycled content, certification capture (Green Seal, EPA Safer Choice, etc.)
+The EIS VIA platform serves as the data processing and enrichment layer, preparing data for R2C's intelligent matching capabilities. It includes:
+-   **Document Ingestion Pipeline**: Handles diverse document formats from numerous supplier feeds, performing multi-source reconciliation and continuous updates.
+-   **Schema Detection & Attribute Mapping**: Unifies product data using industry standards like Schema.org and GS1.
+-   **Taxonomy Optimization**: Classifies products using UNSPSC and optimizes category hierarchies.
+-   **Content Enrichment**: Normalizes titles and descriptions, fills missing attributes, and generates keywords.
+-   **Compliance Checks**: Automates contract verification, enforces policy rules, and generates audit trails.
+-   **Sustainability Data**: Captures CO₂ per unit, recycled content, and certifications.
 
 ## Frontend Architecture
 
-**Framework & Tooling**
-- React 18 with TypeScript for type-safe component development
-- Vite as the build tool and development server for fast hot module replacement
-- Wouter for lightweight client-side routing
-- TanStack Query (React Query) for server state management and data fetching
+**Framework & Tooling**: Utilizes React 18 with TypeScript, Vite for fast development, Wouter for routing, and TanStack Query for server state management.
 
-**UI Component System**
-- shadcn/ui component library built on Radix UI primitives
-- Tailwind CSS for utility-first styling with custom design tokens
-- CSS variables for theming support (light/dark modes)
-- New York style variant with neutral base color scheme
+**UI Component System**: Built with shadcn/ui on Radix UI primitives, styled using Tailwind CSS with custom design tokens and CSS variables for theming (light/dark modes). Features a New York style variant with a neutral base color scheme.
 
-**State Management Pattern**
-- Server state managed through React Query with aggressive caching (staleTime: Infinity)
-- Local UI state handled with React hooks (useState)
-- Form state managed through react-hook-form with Zod validation
-- Toast notifications for user feedback
+**State Management**: Server state is managed by React Query with aggressive caching. Local UI state uses React hooks, and form state is handled by react-hook-form with Zod validation.
 
-**Multi-Step Workflow Design**
-- Four-step procurement process: Upload → Match → Optimize → Finalize
-- Step-based navigation with progress indicators
-- Drawer/modal patterns for detailed comparisons and confirmations
-- Intelligence storytelling at each step showing what the AI agent did and why
+**Multi-Step Workflow**: Implements a four-step procurement process (Upload → Match → Optimize → Finalize) with step-based navigation and progress indicators. Uses drawer/modal patterns for detailed interactions and provides "intelligence storytelling" at each stage.
 
-**Layout Architecture**
-- Desktop: OPUS Storefront (left) + R2C Agent panel (right, 420px fixed width)
-- Mobile: Full-screen assistant panel with FAB trigger button, responsive product grids
-- Panel open/close with storefront margin adjustment (mr-[420px])
+**Layout Architecture**: For desktop, it features an OPUS Storefront (left) alongside a fixed-width R2C Agent panel (right). Mobile displays a full-screen assistant panel triggered by a Floating Action Button (FAB).
 
 ## Backend Architecture
 
-**Server Framework**
-- Express.js as the HTTP server
-- TypeScript with ESNext module system
-- Middleware pipeline for JSON parsing, request logging, and raw body access
+**Server Framework**: Uses Express.js with TypeScript and ESNext modules, featuring a middleware pipeline for request processing.
 
-**API Structure**
-- RESTful endpoints under `/api` prefix
-- Product catalog endpoints (`/api/products`)
-- Order management endpoints (`/api/orders`)
-- Value metrics endpoint (`/api/orders/:id/value-metrics`) — multi-dimensional value computation
-- Swap recommendation system integrated into order creation
+**API Structure**: Provides RESTful endpoints for product catalog, order management, and multi-dimensional value metrics, including integrated swap recommendations.
 
-**Data Layer**
-- PostgreSQL database storage (DatabaseStorage class) for persistent data
-- Interface-based storage abstraction (IStorage) allows different storage backends
-- Drizzle ORM for type-safe PostgreSQL queries and migrations
-- Schema uses UUIDs for primary keys and JSONB for flexible data structures
+**Data Layer**: Employs PostgreSQL for persistent storage, abstracted via an `IStorage` interface, and utilizes Drizzle ORM for type-safe queries and migrations. Primary keys use UUIDs, and JSONB is used for flexible data structures.
 
-**Product Matching Engine (server/matching.ts)**
-- BM25-style scoring with TF-IDF term frequency/inverse document frequency weighting
-- Trigram fuzzy matching for typo tolerance
-- Synonym expansion for common procurement terms
-- UNSPSC-aware category matching using enriched taxonomy hierarchy
-- Name field boost (2x weight) for precision
-- Configurable confidence thresholds
+**Product Matching Engine**: Implements BM25-style scoring with TF-IDF weighting, trigram fuzzy matching, synonym expansion, and UNSPSC-aware category matching. It prioritizes name field matches and uses configurable confidence thresholds.
 
-**File Upload & Parsing**
-- CSV file parsing with intelligent column detection
-- Excel file parsing via xlsx library (base64 encoding for binary transfer)
-- Product matching maps uploaded items to enriched catalog products
-- Confidence scoring for match quality
+**File Upload & Parsing**: Supports CSV and Excel file parsing with intelligent column detection, mapping uploaded items to enriched catalog products with confidence scoring.
 
-**Swap Recommendation Engine**
-- Priority-based scoring: stock risks (100), bulk savings (80), supplier alternatives (70), eco options (60)
-- Enriched attribute-aware: uses packSize, certifications, co2PerUnit, contractTier, UNSPSC for matching
-- Contextual reason generation with specific metrics and certification details
-- Deduplication via usedAlternatives set to avoid recommending same product twice
-- Types: pack_size, supplier, stock, sustainability
+**Swap Recommendation Engine**: Offers priority-based scoring for stock risks, bulk savings, supplier alternatives, and eco-options. It uses enriched attributes like `packSize`, certifications, and `co2PerUnit` to generate contextual reasons for recommendations.
 
-**Value Metrics Engine**
-- Direct cost savings from swap recommendations
-- Maverick spend prevention (estimated 15% off-contract premium avoided)
-- Stockout cost avoidance (rush shipping + downtime estimates)
-- Sustainability metrics: CO₂ reduction, eco items, recycled content, certified products
-- Spend consolidation: supplier count, category count, preferred supplier utilization
-- Total value created aggregation
+**Value Metrics Engine**: Computes direct cost savings, maverick spend prevention, stockout cost avoidance, sustainability impact (CO₂ reduction), and spend consolidation metrics.
 
-**Database Schema Design**
-- Products table: enriched catalog items with UNSPSC, categoryPath, brand, MPN, packSize, certifications, contractTier, preferredSupplier, co2PerUnit, recycledContent
-- Orders table: tracks upload status, total amounts, and savings with JSONB for raw items data
-- Order Items table: links products to orders with quantities, prices, and swap tracking
-- Swap Recommendations table: stores AI-suggested alternatives with savings calculations and swap types
+**Database Schema Design**: Includes tables for `Products` (enriched catalog items), `Orders` (tracking status and savings), `Order Items` (linking products to orders), and `Swap Recommendations` (storing AI-suggested alternatives).
 
 ## Deployment
 
-**Self-Hostable**
-- Dockerfile with multi-stage build (node:20-alpine)
-- docker-compose.yml with app + PostgreSQL services
-- .env.example for configuration
-- Demo mode possible with in-memory storage
+The system is designed to be self-hostable with a Dockerfile and `docker-compose.yml` setup, supporting a demo mode with in-memory storage.
 
-## Key Files
-
-- `client/src/pages/opus-integrated.tsx` — Main integrated page (storefront + assistant)
-- `client/src/components/opus-storefront.tsx` — Product catalog storefront with real OPUS suppliers
-- `client/src/components/chat-assistant-panel.tsx` — R2C Agent panel wrapper
-- `client/src/components/file-upload.tsx` — File upload with progress intelligence
-- `client/src/components/product-matching.tsx` — Match review with agent actions and enriched data display
-- `client/src/components/smart-swaps.tsx` — Swap recommendations with agent intelligence
-- `client/src/components/cart-summary.tsx` — Final summary with multi-dimensional value dashboard
-- `server/routes.ts` — API routes, swap recommendation generation, value metrics endpoint
-- `server/matching.ts` — BM25-style product matching engine with TF-IDF and synonym expansion
-- `server/seed.ts` — 50-product enriched seed catalog across 6 categories with real OPUS suppliers
-- `server/file-parser.ts` — CSV/Excel parsing and product matching
-- `server/storage.ts` — Database storage abstraction
-- `shared/schema.ts` — Drizzle schema with enriched taxonomy fields and Zod types
-- `docs/PRD.md` — Product Requirements Document with EIS VIA platform narrative
-
-## External Dependencies
+# External Dependencies
 
 **Database & Storage**
-- PostgreSQL as the production database (via Drizzle configuration)
-- Neon Database serverless driver (@neondatabase/serverless) for connection pooling
-- Drizzle ORM for type-safe database queries and migrations
+-   PostgreSQL (production database)
+-   Neon Database serverless driver
+-   Drizzle ORM
 
 **Third-Party UI Libraries**
-- Radix UI for accessible, unstyled component primitives (30+ components)
-- Lucide React for consistent iconography
-- embla-carousel-react for carousel/slider functionality
-- cmdk for command palette patterns
-- vaul for drawer components
+-   Radix UI
+-   Lucide React
+-   embla-carousel-react
+-   cmdk
+-   vaul
 
 **Utility Libraries**
-- date-fns for date manipulation and formatting
-- class-variance-authority (cva) for variant-based component styling
-- clsx and tailwind-merge for conditional className composition
-- nanoid for unique ID generation
-- xlsx for Excel file parsing
-- jspdf and jspdf-autotable for PDF generation
-
-# Recent Changes
-
-**February 2026 - Chat Assistant Interface & Price Fix**
-- Added conversational chat input at bottom of R2C assistant panel for follow-up questions
-- Chat supports contextual responses about order items, pricing, swaps, compliance, sustainability, exports
-- Message bubbles with user (navy) and bot (white) styling, typing indicator animation
-- Fixed zero-dollar totals: CartSummary now uses item.unitPrice (stored on order items) as primary price source instead of depending on product catalog lookups
-- All line item displays, exports (PDF/CSV), and audit trail consistently use item.unitPrice
-- Chat messages reset on new order creation
-
-**February 2026 - Full-Screen Expand & Credits**
-- Added full-screen expand/collapse toggle to R2C sidebar agent panel (Expand/Shrink button in header)
-- Expanded mode: full-screen takeover with OPUS branding in header, max-width content container, Earley Information Science link
-- Sidebar mode: 420px fixed-width panel with minimize/close controls
-- Added discreet earley.com footer link (www.earley.com) in panel and standalone page
-- Added very discreet Alexander Kline credit as AI Innovation Architect in panel footer and standalone page
-- VIA branding precision: "Powered by VIA" in agent header, "VIA-enriched" in all data references, "· VIA-powered" on all intelligence panels (Agent Actions, Agent Intelligence, Agent Impact Summary)
-
-**February 2026 - EIS VIA Platform & Multi-Dimensional Value**
-- Added EIS VIA platform narrative to PRD documenting document ingestion pipeline, schema governance, taxonomy optimization, content enrichment, compliance checks, and search tuning as the foundation enabling R2C
-- VIA branded as EIS's proprietary data processing and enrichment technology; R2C works without it but performs dramatically better with VIA-enriched data
-- Enhanced product schema with enriched taxonomy fields: UNSPSC codes, categoryPath hierarchy, brand, MPN, packSize, certifications, contractTier, preferredSupplier, co2PerUnit, recycledContent
-- Expanded seed catalog to 50 products across 6 categories using real OPUS cooperative suppliers (Grainger, ODP Business Solutions, Quill, Global Industrial, MSC Industrial, Medline, Lawson Products, Network Distribution, Safeware)
-- Built BM25-style matching engine (server/matching.ts) with TF-IDF scoring, trigram fuzzy matching, and synonym expansion for procurement terms
-- Upgraded swap engine to use enriched product attributes: UNSPSC matching, packSize-aware bulk comparisons, certification-rich sustainability reasons, contract tier notes
-- Added value metrics API endpoint computing direct savings, maverick spend prevention, stockout cost avoidance, sustainability impact (CO₂ reduction), and spend consolidation
-- Enhanced cart summary with multi-dimensional value dashboard showing all value dimensions
-- Updated all messaging to reference "cooperative master agreements", "630+ cooperative suppliers", "7.5M+ enriched catalog items"
-- Updated stats, suppliers, contract formats (OMNIA R-XXXXX), and target user messaging to align with real OPUS platform
-
-**February 2026 - Agentic Commerce Intelligence**
-- Upgraded swap recommendation engine with priority-based reasoning and contextual explanations
-- Enhanced workflow with intelligence storytelling: "Agent Actions", "Agent Intelligence", "Agent Impact Summary"
-- File upload shows contextual progress messages (Reading document → Detecting columns → Matching to catalog)
-- Added elapsed time tracking from upload through submission
-- Success dialog shows 3-metric summary with manual processing comparison
-
-**January 2026 - Mobile Responsiveness & Self-Hosting**
-- Full mobile responsiveness: full-screen assistant on mobile, FAB trigger, touch-optimized interactions
-- Self-hostable deployment: Dockerfile, docker-compose.yml, .env.example
-- Comprehensive PRD documenting agentic commerce positioning
-
-**January 2026 - OPUS Storefront Integration**
-- Integrated OPUS storefront with R2C Agent panel layout
-- OPUS visual identity: navy blue colors (#1e3a5f, #2d5a87)
-- Interactive product highlighting when matched in assistant panel
-- Routing: "/" serves integrated view, "/standalone" maintains original workflow
-
-**January 2026 - Phase 2 Enhancements**
-- PostgreSQL database migration for persistent data
-- CSV/Excel file upload parsing with intelligent column detection
-- Product filtering, sorting, and order export (PDF/CSV)
+-   date-fns
+-   class-variance-authority (cva)
+-   clsx and tailwind-merge
+-   nanoid
+-   xlsx
+-   jspdf and jspdf-autotable
