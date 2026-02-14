@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { CloudUpload, Check, Loader2, ArrowRight, FileSpreadsheet, AlertCircle, Sparkles } from "lucide-react";
+import { CloudUpload, Check, Loader2, ArrowRight, FileSpreadsheet, AlertCircle, Sparkles, Copy, AlertTriangle, Columns, Clock } from "lucide-react";
 
 interface MatchedItem {
   requestedItem: {
@@ -17,8 +17,19 @@ interface MatchedItem {
   quantity: number;
 }
 
+interface ParseStats {
+  duplicatesFound: number;
+  duplicateNames: string[];
+  missingQuantities: number;
+  missingQuantityItems: string[];
+  columnsDetected: string[];
+  parseTimeMs: number;
+  originalRowCount: number;
+  consolidatedCount: number;
+}
+
 interface FileUploadProps {
-  onUpload: (fileName: string, matchedItems?: MatchedItem[]) => void;
+  onUpload: (fileName: string, matchedItems?: MatchedItem[], parseStats?: ParseStats) => void;
   isUploading: boolean;
   onNext: () => void;
 }
@@ -28,6 +39,7 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const [parsedItemCount, setParsedItemCount] = useState(0);
+  const [parseStats, setParseStats] = useState<ParseStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -95,8 +107,11 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
 
       setUploadProgress(100);
       setParsedItemCount(result.rowCount);
+      if (result.parseStats) {
+        setParseStats(result.parseStats);
+      }
       
-      onUpload(file.name, result.matchedItems);
+      onUpload(file.name, result.matchedItems, result.parseStats);
     } catch (err) {
       console.error('Upload error:', err);
       setError(err instanceof Error ? err.message : 'Failed to process file');
@@ -115,6 +130,16 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
       if (step >= steps.length) {
         clearInterval(interval);
         setParsedItemCount(18);
+        setParseStats({
+          duplicatesFound: 0,
+          duplicateNames: [],
+          missingQuantities: 0,
+          missingQuantityItems: [],
+          columnsDetected: ['Item Name', 'Quantity', 'Unit of Measure'],
+          parseTimeMs: 2300,
+          originalRowCount: 18,
+          consolidatedCount: 18
+        });
         onUpload("K12-District-Annual-Supply-RFQ-2026.xlsx");
         return;
       }
@@ -245,16 +270,68 @@ export default function FileUpload({ onUpload, isUploading, onNext }: FileUpload
               </p>
             </div>
           ) : (
-            <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shrink-0">
-                <Sparkles className="w-3.5 h-3.5 text-white" />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div>
+                  <p className="font-medium text-blue-900 text-xs sm:text-sm" data-testid="text-items-detected">
+                    {parsedItemCount} items detected & matched
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-blue-700">All items verified against OMNIA cooperative master agreements</p>
+                </div>
               </div>
-              <div>
-                <p className="font-medium text-blue-900 text-xs sm:text-sm" data-testid="text-items-detected">
-                  {parsedItemCount} items detected & matched
-                </p>
-                <p className="text-[10px] sm:text-xs text-blue-700">All items verified against OMNIA cooperative master agreements</p>
-              </div>
+
+              {parseStats && (
+                <div className="bg-gradient-to-r from-slate-50 to-blue-50/50 border border-slate-200 rounded-lg p-2.5 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-300" data-testid="parse-stats-panel">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Sparkles className="w-3 h-3 text-[#1e3a5f]" />
+                    <span className="text-[9px] font-semibold text-[#1e3a5f] uppercase tracking-wide">Agent Actions <span className="font-normal text-gray-500">· VIA-powered</span></span>
+                  </div>
+
+                  <div className="flex items-start gap-1.5 text-[10px] text-gray-700">
+                    <Clock className="w-3 h-3 text-blue-500 shrink-0 mt-0.5" />
+                    <span>Parsed <strong>{parseStats.originalRowCount} line items</strong> in <strong>{(parseStats.parseTimeMs / 1000).toFixed(1)}s</strong></span>
+                  </div>
+
+                  {parseStats.columnsDetected.length > 0 && (
+                    <div className="flex items-start gap-1.5 text-[10px] text-gray-700">
+                      <Columns className="w-3 h-3 text-indigo-500 shrink-0 mt-0.5" />
+                      <span>Detected columns: <strong>{parseStats.columnsDetected.join(', ')}</strong></span>
+                    </div>
+                  )}
+
+                  {parseStats.duplicatesFound > 0 && (
+                    <div className="flex items-start gap-1.5 text-[10px] text-amber-800">
+                      <Copy className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
+                      <span><strong>{parseStats.duplicatesFound} duplicate{parseStats.duplicatesFound > 1 ? 's' : ''}</strong> detected and consolidated automatically
+                        {parseStats.duplicateNames.length > 0 && (
+                          <span className="text-gray-500"> ({parseStats.duplicateNames.slice(0, 3).join(', ')}{parseStats.duplicateNames.length > 3 ? '...' : ''})</span>
+                        )}
+                      </span>
+                    </div>
+                  )}
+
+                  {parseStats.missingQuantities > 0 && (
+                    <div className="flex items-start gap-1.5 text-[10px] text-amber-800">
+                      <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
+                      <span><strong>{parseStats.missingQuantities} item{parseStats.missingQuantities > 1 ? 's' : ''}</strong> had missing quantities — defaulted to minimum order (1)
+                        {parseStats.missingQuantityItems.length > 0 && (
+                          <span className="text-gray-500"> ({parseStats.missingQuantityItems.slice(0, 3).join(', ')}{parseStats.missingQuantityItems.length > 3 ? '...' : ''})</span>
+                        )}
+                      </span>
+                    </div>
+                  )}
+
+                  {parseStats.duplicatesFound === 0 && parseStats.missingQuantities === 0 && (
+                    <div className="flex items-start gap-1.5 text-[10px] text-green-700">
+                      <Check className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
+                      <span><strong>Clean file</strong> — no duplicates or anomalies detected</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

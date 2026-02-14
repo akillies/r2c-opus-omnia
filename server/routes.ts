@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertOrderSchema, insertOrderItemSchema, insertSwapRecommendationSchema } from "@shared/schema";
 import { z } from "zod";
-import { parseCSV, parseExcel } from "./file-parser";
+import { parseCSV, parseExcel, parseTextInput } from "./file-parser";
 import { productMatcher } from "./matching";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -45,11 +45,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fileName: parsedResult.fileName,
         rowCount: parsedResult.rowCount,
         items: parsedResult.items,
-        matchedItems
+        matchedItems,
+        parseStats: parsedResult.stats
       });
     } catch (error) {
       console.error('Parse error:', error);
       res.status(500).json({ message: "Failed to parse file" });
+    }
+  });
+
+  app.post("/api/parse-text", async (req, res) => {
+    try {
+      const { text } = req.body;
+      if (!text || typeof text !== 'string' || text.trim().length < 3) {
+        return res.status(400).json({ message: "Please provide a text description of items needed" });
+      }
+
+      const parsedResult = parseTextInput(text);
+      if (parsedResult.items.length === 0) {
+        return res.status(400).json({ message: "Could not identify any items from your text. Try listing items with quantities, e.g. '10 copy paper, 5 pens'" });
+      }
+
+      const products = await storage.getProducts();
+      productMatcher.initialize(products);
+      const matchedItems = productMatcher.matchItems(parsedResult.items);
+
+      res.json({
+        fileName: 'text-input',
+        rowCount: parsedResult.rowCount,
+        items: parsedResult.items,
+        matchedItems,
+        parseStats: parsedResult.stats
+      });
+    } catch (error) {
+      console.error('Text parse error:', error);
+      res.status(500).json({ message: "Failed to parse text input" });
     }
   });
 
@@ -333,6 +363,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
           swapType: bestSwap.swapType,
           savingsAmount: bestSwap.savings.toFixed(2),
           reason: bestSwap.reason
+        });
+      }
+    }
+
+    const supplierCounts = new Map<string, number>();
+    for (const item of orderItems) {
+      const prod = products.find((p: any) => p.id === item.productId);
+      if (prod?.supplier) {
+        supplierCounts.set(prod.supplier, (supplierCounts.get(prod.supplier) || 0) + 1);
+      }
+    }
+
+    const preferredSuppliers = products.filter((p: any) => p.preferredSupplier);
+    const swappedProductIds = new Set(recommendations.map(r => r.originalProductId));
+
+    for (const item of orderItems) {
+      if (swappedProductIds.has(item.productId) || usedAlternatives.has(item.productId)) continue;
+      const currentProduct = products.find((p: any) => p.id === item.productId);
+      if (!currentProduct || currentProduct.preferredSupplier) continue;
+
+      const consolidationTarget = preferredSuppliers.find((p: any) => {
+        if (p.id === item.productId || usedAlternatives.has(p.id)) return false;
+        if (p.category !== currentProduct.category) return false;
+        const altPrice = parseFloat(p.unitPrice);
+        const curPrice = parseFloat(currentProduct.unitPrice);
+        return altPrice <= curPrice * 1.10;
+      });
+
+      if (consolidationTarget) {
+        const curPrice = parseFloat(currentProduct.unitPrice);
+        const altPrice = parseFloat(consolidationTarget.unitPrice);
+        const savings = Math.max(0, (curPrice - altPrice) * item.quantity);
+        const shippingSavings = 15;
+        usedAlternatives.add(consolidationTarget.id);
+        recommendations.push({
+          orderId,
+          originalProductId: item.productId,
+          recommendedProductId: consolidationTarget.id,
+          swapType: 'consolidation',
+          savingsAmount: (savings + shippingSavings).toFixed(2),
+          reason: `Supplier consolidation — moving to ${consolidationTarget.supplier} (preferred supplier) consolidates shipments and simplifies receiving. ${savings > 0 ? `Product savings: $${savings.toFixed(2)}. ` : ''}Estimated shipping savings: $${shippingSavings.toFixed(2)} from reduced deliveries`
         });
       }
     }

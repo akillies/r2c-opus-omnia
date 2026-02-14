@@ -288,7 +288,7 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
       return `You can export your finalized order as PDF or CSV from the Finalize step. The export includes all line items, suppliers, contract references, quantities, and pricing — ready for your procurement system or approval workflow.`;
     }
     if (msg.includes('help') || msg.includes('what can you do') || msg.includes('how does')) {
-      return `I'm your R2C procurement agent. I can:\n• Parse RFQ documents (CSV/Excel) and match items to our catalog\n• Find cost-saving swap recommendations\n• Verify contract compliance across all items\n• Track sustainability metrics and certifications\n• Generate purchase orders with full audit trails\n\nJust upload an RFQ to get started, or ask me about your current order.`;
+      return `I'm your R2C procurement agent. I can:\n• Parse RFQ documents (CSV/Excel) and match items to our catalog\n• Accept natural language requests (e.g. "I need 10 copy paper and 5 pens")\n• Find cost-saving swap recommendations\n• Verify contract compliance across all items\n• Track sustainability metrics and certifications\n• Generate purchase orders with full audit trails\n\nUpload an RFQ, type your items below, or ask me about your current order.`;
     }
     if (msg.includes('status') || msg.includes('where') || msg.includes('step')) {
       const stepNames = ['Upload', 'Match', 'Optimize', 'Finalize'];
@@ -301,6 +301,40 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
       return `I understand you're asking about "${userMessage}". Based on your current order with ${itemCount} items, I can help with pricing details, swap recommendations, compliance verification, sustainability metrics, or export options. What would you like to know more about?`;
     }
     return `I'm ready to help with your procurement needs. Upload an RFQ document to get started, or ask me about cooperative suppliers, compliance, sustainability, or how R2C works.`;
+  };
+
+  const isNaturalLanguageRFQ = (text: string): boolean => {
+    const msg = text.toLowerCase();
+    const hasQuantity = /\d+\s+(of\s+)?[a-z]/i.test(text) || /[a-z]+\s*[x×]\s*\d+/i.test(text);
+    const hasProcurementTerms = /(need|order|buy|purchase|get|want|request|require)/i.test(msg);
+    const hasProductTerms = /(paper|pen|tape|gloves|sanitizer|towel|soap|cleaner|wipes|markers|folders|binder|stapl|clip|envelop|label|battery|light|bulb|bag|box|tissue|cup|plate|napkin)/i.test(msg);
+    return hasQuantity && (hasProcurementTerms || hasProductTerms);
+  };
+
+  const handleNaturalLanguageOrder = async (text: string) => {
+    try {
+      const response = await fetch('/api/parse-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        return err.message || 'Could not parse your request';
+      }
+
+      const result = await response.json();
+      if (result.matchedItems && result.matchedItems.length > 0) {
+        setStartTime(Date.now());
+        createOrderMutation.mutate({ fileName: 'text-input', matchedItems: result.matchedItems });
+        setCurrentStep(1);
+        return `Got it! I found ${result.matchedItems.length} item${result.matchedItems.length > 1 ? 's' : ''} from your request and matched them to our catalog. ${result.parseStats?.duplicatesFound > 0 ? `(${result.parseStats.duplicatesFound} duplicates consolidated.) ` : ''}Review the matches and continue when ready.`;
+      }
+      return 'I could not identify specific items from your text. Try listing items with quantities, like "10 copy paper, 5 ballpoint pens, 3 hand sanitizer."';
+    } catch {
+      return 'Something went wrong processing your request. Please try uploading a file instead.';
+    }
   };
 
   const handleChatSubmit = () => {
@@ -316,6 +350,20 @@ export default function ChatAssistantPanel({ isOpen, onClose, onCartUpdate, onHi
     setChatMessages(prev => [...prev, userMsg]);
     setChatInput("");
     setIsTyping(true);
+
+    if (currentStep === 0 && !orderId && isNaturalLanguageRFQ(message)) {
+      handleNaturalLanguageOrder(message).then(response => {
+        const assistantMsg: ChatMessage = {
+          id: `msg-${Date.now()}-reply`,
+          role: 'assistant',
+          content: response,
+          timestamp: new Date()
+        };
+        setChatMessages(prev => [...prev, assistantMsg]);
+        setIsTyping(false);
+      });
+      return;
+    }
 
     setTimeout(() => {
       const response = generateResponse(message);
