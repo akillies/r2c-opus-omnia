@@ -1,7 +1,8 @@
 import { db } from "./db";
 import { products } from "@shared/schema";
+import { sql } from "drizzle-orm";
 
-const sampleProducts = [
+export const sampleProducts = [
   // ═══════════════════════════════════════════
   // JANITORIAL & CLEANING (~10 products)
   // ═══════════════════════════════════════════
@@ -1227,6 +1228,20 @@ const sampleProducts = [
   },
 ];
 
+export async function ensureProductsSeeded() {
+  const result = await db.select({ count: sql<number>`count(*)` }).from(products);
+  const count = Number(result[0]?.count || 0);
+  if (count >= sampleProducts.length) {
+    return;
+  }
+  console.log(`Products table has ${count} rows, seeding ${sampleProducts.length} products...`);
+  await db.delete(products);
+  for (const product of sampleProducts) {
+    await db.insert(products).values(product);
+  }
+  console.log(`Seeding complete! ${sampleProducts.length} products inserted.`);
+}
+
 async function seed() {
   console.log("Seeding database with OPUS-aligned catalog...");
   await db.delete(products);
@@ -1237,6 +1252,9 @@ async function seed() {
   console.log(`Seeding complete! ${sampleProducts.length} products inserted.`);
 }
 
-seed()
-  .then(() => process.exit(0))
-  .catch((err) => { console.error("Seeding failed:", err); process.exit(1); });
+const isDirectRun = process.argv[1]?.endsWith('seed.ts') || process.argv[1]?.endsWith('seed.js');
+if (isDirectRun) {
+  seed()
+    .then(() => process.exit(0))
+    .catch((err) => { console.error("Seeding failed:", err); process.exit(1); });
+}

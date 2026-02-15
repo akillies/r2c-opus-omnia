@@ -51,7 +51,7 @@ interface ValueMetrics {
 
 export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit, onUpdateQuantity, onRemoveItem, onRevertSwap, isSubmitting, elapsedTime, orderId, isExpanded = false }: CartSummaryProps) {
   const [showAuditTrail, setShowAuditTrail] = useState(isExpanded);
-  const [showValueDetails, setShowValueDetails] = useState(isExpanded);
+  const [showValueDetails, setShowValueDetails] = useState(true);
 
   const { data: valueMetrics } = useQuery<ValueMetrics>({
     queryKey: ['/api/orders', orderId, 'value-metrics'],
@@ -103,7 +103,10 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
   const ecoSwaps = swaps.filter(s => s.isAccepted && s.swapType === 'sustainability').length;
   const stockRisksAvoided = swaps.filter(s => s.isAccepted && s.swapType === 'stock').length;
   const totalOptimizations = items.length + swaps.length;
-  const savingsPercent = originalTotal > 0 ? ((totalSavings / originalTotal) * 100).toFixed(1) : '0';
+  const potentialSavings = swaps.reduce((acc, s) => acc + Math.max(0, parseFloat(s.savingsAmount || "0")), 0);
+  const displaySavings = totalSavings > 0 ? totalSavings : potentialSavings;
+  const displayBaseline = totalSavings > 0 ? originalTotal : finalTotal + potentialSavings;
+  const savingsPercent = displayBaseline > 0 ? ((displaySavings / displayBaseline) * 100).toFixed(1) : '0';
   const manualEstimateMin = Math.max(15, items.length * 4);
 
   const preferredCount = items.filter(item => item.productPreferredSupplier).length;
@@ -254,8 +257,8 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
           </div>
           <div className="bg-white/80 rounded-lg p-2 border border-white text-center">
             <TrendingDown className="w-3.5 h-3.5 mx-auto text-green-600 mb-0.5" />
-            <div className="text-sm font-bold text-green-700">{acceptedSwaps} swap{acceptedSwaps !== 1 ? 's' : ''} applied</div>
-            <div className="text-[8px] sm:text-[9px] text-gray-500">of {swaps.length} recommended</div>
+            <div className="text-sm font-bold text-green-700">{acceptedSwaps > 0 ? `${acceptedSwaps} applied` : `${swaps.length} found`}</div>
+            <div className="text-[8px] sm:text-[9px] text-gray-500">{acceptedSwaps > 0 ? `of ${swaps.length} recommended` : `$${potentialSavings.toFixed(0)} potential`}</div>
           </div>
           <div className="bg-white/80 rounded-lg p-2 border border-white text-center">
             <ShieldCheck className="w-3.5 h-3.5 mx-auto text-purple-600 mb-0.5" />
@@ -286,15 +289,15 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
         <div className="grid grid-cols-3 gap-1.5 mt-2">
           <div className="bg-white/80 rounded px-2 py-1.5 text-center">
             <div className="text-[8px] text-gray-500 uppercase tracking-wide font-semibold">Baseline</div>
-            <div className="text-[11px] font-mono font-bold text-gray-400 line-through">${originalTotal.toFixed(0)}</div>
+            <div className="text-[11px] font-mono font-bold text-gray-400 line-through">${displayBaseline.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
           </div>
           <div className="bg-white/80 rounded px-2 py-1.5 text-center">
             <div className="text-[8px] text-green-600 uppercase tracking-wide font-semibold">Optimized</div>
-            <div className="text-[11px] font-mono font-bold text-green-700">${finalTotal.toFixed(0)}</div>
+            <div className="text-[11px] font-mono font-bold text-green-700">${finalTotal.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
           </div>
           <div className="bg-white/80 rounded px-2 py-1.5 text-center">
             <div className="text-[8px] text-[#1e3a5f] uppercase tracking-wide font-semibold">Saved</div>
-            <div className="text-[11px] font-mono font-bold text-[#1e3a5f]">{savingsPercent}%</div>
+            <div className="text-[11px] font-mono font-bold text-[#1e3a5f]">${displaySavings.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} · {savingsPercent}%</div>
           </div>
         </div>
 
@@ -347,7 +350,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
               <span className="font-semibold text-cyan-700">Traceable PO</span>
             </div>
 
-            {valueMetrics && totalValueCreated > 0 && (
+            {valueMetrics && (
               <div className="mt-1.5 pt-1.5 border-t border-[#1e3a5f]/10 space-y-1">
                 <div className="text-[9px] text-gray-500 uppercase tracking-wide font-semibold">Total Value Created</div>
                 {valueMetrics.directSavings > 0 && (
@@ -356,14 +359,20 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                     <span className="font-semibold text-green-700">${valueMetrics.directSavings.toFixed(2)}</span>
                   </div>
                 )}
+                {potentialSavings > 0 && valueMetrics.directSavings <= 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Potential swap savings</span>
+                    <span className="font-semibold text-green-700">${potentialSavings.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Maverick spend avoided</span>
-                  <span className="font-semibold text-purple-700">${valueMetrics.maverickSpendAvoided.toFixed(0)}</span>
+                  <span className="font-semibold text-purple-700">${valueMetrics.maverickSpendAvoided.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
                 </div>
                 {valueMetrics.stockoutCostAvoided > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Stockout cost avoidance</span>
-                    <span className="font-semibold text-amber-700">${valueMetrics.stockoutCostAvoided.toFixed(0)}</span>
+                    <span className="font-semibold text-amber-700">${valueMetrics.stockoutCostAvoided.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
                   </div>
                 )}
                 {valueMetrics.sustainability.co2ReductionKg > 0 && (
@@ -377,7 +386,7 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
                     <Sparkles className="w-3 h-3" />
                     Total value
                   </span>
-                  <span className="font-bold text-[#1e3a5f]">${totalValueCreated.toFixed(0)}</span>
+                  <span className="font-bold text-[#1e3a5f]">${(totalValueCreated + (valueMetrics.directSavings <= 0 ? potentialSavings : 0)).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
                 </div>
               </div>
             )}
@@ -386,16 +395,17 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        {totalSavings > 0 && (
-          <div className="bg-green-50 border border-green-200 rounded-lg px-2.5 sm:px-3 py-2 text-center">
-            <div className="text-[9px] sm:text-[10px] text-green-600 uppercase font-semibold tracking-wide flex items-center justify-center gap-1">
-              <TrendingDown className="w-3 h-3" />
-              Savings
-            </div>
-            <div className="text-base sm:text-lg font-bold text-green-900" data-testid="total-savings">${totalSavings.toFixed(2)}</div>
+        <div className="bg-green-50 border border-green-200 rounded-lg px-2.5 sm:px-3 py-2 text-center">
+          <div className="text-[9px] sm:text-[10px] text-green-600 uppercase font-semibold tracking-wide flex items-center justify-center gap-1">
+            <TrendingDown className="w-3 h-3" />
+            {totalSavings > 0 ? 'Realized Savings' : 'Available Savings'}
           </div>
-        )}
-        <div className={`bg-[#1e3a5f]/5 border border-[#1e3a5f]/20 rounded-lg px-2.5 sm:px-3 py-2 text-center ${totalSavings <= 0 ? 'col-span-2' : ''}`}>
+          <div className="text-base sm:text-lg font-bold text-green-900" data-testid="total-savings">${displaySavings.toFixed(2)}</div>
+          {totalSavings <= 0 && potentialSavings > 0 && (
+            <div className="text-[8px] text-green-600">from {swaps.length} swap options</div>
+          )}
+        </div>
+        <div className="bg-[#1e3a5f]/5 border border-[#1e3a5f]/20 rounded-lg px-2.5 sm:px-3 py-2 text-center">
           <div className="text-[9px] sm:text-[10px] text-[#1e3a5f] uppercase font-semibold tracking-wide">Final Total</div>
           <div className="text-base sm:text-lg font-bold text-[#1e3a5f]" data-testid="final-total">${finalTotal.toFixed(2)}</div>
         </div>
@@ -738,8 +748,9 @@ export default function CartSummary({ items, swaps, matchMeta, onBack, onSubmit,
               <div className="text-[8px] text-blue-600 font-medium">Approved Vendors</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-purple-700" data-testid="policy-check">
-                <CheckCircle2 className="w-5 h-5 mx-auto text-purple-600" />
+              <div className="text-lg font-bold text-purple-700 flex items-center justify-center gap-1" data-testid="policy-check">
+                <CheckCircle2 className="w-4 h-4 text-purple-600" />
+                Pass
               </div>
               <div className="text-[8px] text-purple-600 font-medium">Policy Cleared</div>
             </div>
